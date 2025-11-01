@@ -27,16 +27,13 @@ export default function Home() {
   return (
     <main className="h-[100vh] flex justify-center items-center ">
       {isloading && <Loader />}
-      {message.text && (
-        <Alerta text={message.text} desc={message.desc} type={message.type} />
-      )}
+      {message.text && <Alerta />}
       <div className="container w-[90%] sm:w-[90%] md:w-[70%] lg:w-[60%] h-[50%]  p-5 rounded-md shadow relative flex text-[#O53D58] backdrop-blur-sm shadow-lg shadow-white/50 text-blue-600">
         <section
           className={`basis-full sm:basis-1/2 grow-1 transition  duration-1000 ease-in-out ${
             !isLogin && "sm:translate-x-[70%]"
           }`}
         >
-          {" "}
           <h1 className="text-center text-3xl font-bold">Huella Vital </h1>
           {isLogin ? (
             <LoginForm
