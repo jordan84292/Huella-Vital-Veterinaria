@@ -1,164 +1,198 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { DashboardHeader } from "@/components/dashboard-header"
-import { DashboardSidebar } from "@/components/dashboard-sidebar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Plus, Search, Pencil, Trash2, MoreVertical, Eye } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { PatientDialog } from "@/components/patient-dialog"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { DashboardHeader } from "@/components/dashboard-header";
+import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  MoreVertical,
+  Eye,
+  Filter,
+  X,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { PatientDialog } from "@/components/patient-dialog";
+import { axiosApi } from "../axiosApi/axiosApi";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/Redux/store";
+import {
+  setIsLoading,
+  setMessage,
+  setPatients,
+} from "@/Redux/reducers/interfaceReducer";
 
 type Patient = {
-  id: string
-  name: string
-  species: "Perro" | "Gato" | "Conejo" | "Ave" | "Otro"
-  breed: string
-  age: number
-  weight: number
-  gender: "Macho" | "Hembra"
-  ownerName: string
-  ownerId: string
-  microchip: string
-  status: "Activo" | "Inactivo"
-  lastVisit: string
-  nextVisit: string
-}
-
-const mockPatients: Patient[] = [
-  {
-    id: "1",
-    name: "Max",
-    species: "Perro",
-    breed: "Golden Retriever",
-    age: 3,
-    weight: 28.5,
-    gender: "Macho",
-    ownerName: "María González",
-    ownerId: "1",
-    microchip: "982000123456789",
-    status: "Activo",
-    lastVisit: "2024-10-15",
-    nextVisit: "2024-11-15",
-  },
-  {
-    id: "2",
-    name: "Luna",
-    species: "Gato",
-    breed: "Siamés",
-    age: 2,
-    weight: 4.2,
-    gender: "Hembra",
-    ownerName: "Carlos Ruiz",
-    ownerId: "2",
-    microchip: "982000987654321",
-    status: "Activo",
-    lastVisit: "2024-10-20",
-    nextVisit: "2024-11-20",
-  },
-  {
-    id: "3",
-    name: "Rocky",
-    species: "Perro",
-    breed: "Pastor Alemán",
-    age: 5,
-    weight: 35.0,
-    gender: "Macho",
-    ownerName: "Ana Martínez",
-    ownerId: "3",
-    microchip: "982000456789123",
-    status: "Activo",
-    lastVisit: "2024-10-18",
-    nextVisit: "2024-12-18",
-  },
-  {
-    id: "4",
-    name: "Bella",
-    species: "Gato",
-    breed: "Persa",
-    age: 4,
-    weight: 5.1,
-    gender: "Hembra",
-    ownerName: "Luis Pérez",
-    ownerId: "4",
-    microchip: "982000789123456",
-    status: "Activo",
-    lastVisit: "2024-10-22",
-    nextVisit: "2024-10-30",
-  },
-  {
-    id: "5",
-    name: "Thor",
-    species: "Perro",
-    breed: "Husky Siberiano",
-    age: 2,
-    weight: 24.8,
-    gender: "Macho",
-    ownerName: "Laura Torres",
-    ownerId: "5",
-    microchip: "982000321654987",
-    status: "Activo",
-    lastVisit: "2024-10-10",
-    nextVisit: "2024-11-10",
-  },
-]
+  id: string;
+  name: string;
+  species: "Perro" | "Gato" | "Conejo" | "Ave" | "Otro";
+  breed: string;
+  age: number;
+  weight: number;
+  gender: "Macho" | "Hembra";
+  birthDate?: string;
+  ownerName: string;
+  ownerId: string;
+  nextVisit?: string;
+  lastVisit?: string;
+  microchip?: string;
+  color?: string;
+  allergies?: string;
+  status: "Activo" | "Inactivo";
+};
 
 export default function PacientesPage() {
-  const [patients, setPatients] = useState<Patient[]>(mockPatients)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+  const patients = useSelector((state: RootState) => state.interface.patients);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [speciesFilter, setSpeciesFilter] = useState<string>("todos");
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const dispatch = useDispatch();
 
-  const filteredPatients = patients.filter(
-    (patient) =>
+  useEffect(() => {
+    const getPatients = async () => {
+      dispatch(setIsLoading(true));
+      try {
+        const res = await axiosApi.get("/patients");
+        dispatch(setPatients(res.data.data));
+      } catch (error: any) {
+        dispatch(
+          setMessage({
+            view: true,
+            type: "Error",
+            text: "Error al cargar pacientes",
+            desc: error.response?.data?.message || error.message,
+          })
+        );
+      } finally {
+        dispatch(setIsLoading(false));
+      }
+    };
+    getPatients();
+  }, [dispatch]);
+
+  // Función de filtrado
+  const filteredPatients = patients.filter((patient) => {
+    const matchesSearch =
       patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      patient.species.toLowerCase().includes(searchQuery.toLowerCase()) ||
       patient.breed.toLowerCase().includes(searchQuery.toLowerCase()) ||
       patient.ownerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      patient.microchip.includes(searchQuery),
-  )
+      (patient.microchip?.includes(searchQuery) ?? false);
+
+    const matchesSpecies =
+      speciesFilter === "todos" || patient.species === speciesFilter;
+
+    const matchesStatus =
+      statusFilter === "todos" || patient.status === statusFilter;
+
+    return matchesSearch && matchesSpecies && matchesStatus;
+  });
+
+  // Función para limpiar todos los filtros
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSpeciesFilter("todos");
+    setStatusFilter("todos");
+  };
+
+  // Verificar si hay filtros activos
+  const hasActiveFilters =
+    searchQuery !== "" || speciesFilter !== "todos" || statusFilter !== "todos";
 
   const handleAddPatient = () => {
-    setSelectedPatient(null)
-    setDialogOpen(true)
-  }
+    setSelectedPatient(null);
+    setDialogOpen(true);
+  };
 
   const handleEditPatient = (patient: Patient) => {
-    setSelectedPatient(patient)
-    setDialogOpen(true)
-  }
+    setSelectedPatient(patient);
+    setDialogOpen(true);
+  };
 
-  const handleDeletePatient = (patientId: string) => {
-    setPatients(patients.filter((p) => p.id !== patientId))
-  }
+  const handleDeletePatient = (id: string) => {
+    dispatch(setIsLoading(true));
+    const sendData = async () => {
+      try {
+        const res = await axiosApi.delete(`/patients/${id}`);
 
-  const handleSavePatient = (patientData: Omit<Patient, "id">) => {
-    if (selectedPatient) {
-      setPatients(patients.map((p) => (p.id === selectedPatient.id ? { ...patientData, id: p.id } : p)))
-    } else {
-      const newPatient: Patient = {
-        ...patientData,
-        id: (patients.length + 1).toString(),
+        dispatch(
+          setMessage({
+            view: true,
+            type: "",
+            text: "Success!!",
+            desc: res.data.message,
+          })
+        );
+
+        const refresh = await axiosApi.get("/patients");
+        dispatch(setPatients(refresh.data.data));
+      } catch (error: any) {
+        dispatch(
+          setMessage({
+            view: true,
+            type: "Error",
+            text: error.response?.statusText || "Error",
+            desc: error.response?.data?.message || error.message,
+          })
+        );
+      } finally {
+        dispatch(setIsLoading(false));
       }
-      setPatients([...patients, newPatient])
-    }
-    setDialogOpen(false)
-  }
+    };
+    sendData();
+  };
 
   const getSpeciesBadgeVariant = (species: Patient["species"]) => {
     switch (species) {
       case "Perro":
-        return "default"
+        return "default";
       case "Gato":
-        return "secondary"
+        return "secondary";
       default:
-        return "outline"
+        return "outline";
     }
-  }
+  };
+
+  // Cálculo de estadísticas
+  const totalPerros = patients.filter((p) => p.species === "Perro").length;
+  const totalGatos = patients.filter((p) => p.species === "Gato").length;
+  const totalOtros = patients.filter(
+    (p) => p.species !== "Perro" && p.species !== "Gato"
+  ).length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -168,8 +202,12 @@ export default function PacientesPage() {
       <main className="p-4 md:ml-64 md:p-6">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between md:mb-6">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Pacientes</h2>
-            <p className="text-sm text-muted-foreground md:text-base">Registro de mascotas y animales</p>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+              Pacientes
+            </h2>
+            <p className="text-sm text-muted-foreground md:text-base">
+              Registro de mascotas y animales
+            </p>
           </div>
           <Button onClick={handleAddPatient} className="gap-2 w-full sm:w-auto">
             <Plus className="h-4 w-4" />
@@ -177,14 +215,19 @@ export default function PacientesPage() {
           </Button>
         </div>
 
+        {/* Tarjetas de estadísticas */}
         <div className="mb-4 grid gap-4 grid-cols-2 lg:grid-cols-4 md:mb-6">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Total Pacientes</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Pacientes
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{patients.length}</div>
-              <p className="text-xs text-muted-foreground">Mascotas registradas</p>
+              <p className="text-xs text-muted-foreground">
+                Mascotas registradas
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -192,7 +235,7 @@ export default function PacientesPage() {
               <CardTitle className="text-sm font-medium">Perros</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{patients.filter((p) => p.species === "Perro").length}</div>
+              <div className="text-2xl font-bold">{totalPerros}</div>
               <p className="text-xs text-muted-foreground">Caninos activos</p>
             </CardContent>
           </Card>
@@ -201,7 +244,7 @@ export default function PacientesPage() {
               <CardTitle className="text-sm font-medium">Gatos</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{patients.filter((p) => p.species === "Gato").length}</div>
+              <div className="text-2xl font-bold">{totalGatos}</div>
               <p className="text-xs text-muted-foreground">Felinos activos</p>
             </CardContent>
           </Card>
@@ -210,9 +253,7 @@ export default function PacientesPage() {
               <CardTitle className="text-sm font-medium">Otros</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {patients.filter((p) => p.species !== "Perro" && p.species !== "Gato").length}
-              </div>
+              <div className="text-2xl font-bold">{totalOtros}</div>
               <p className="text-xs text-muted-foreground">Otras especies</p>
             </CardContent>
           </Card>
@@ -220,88 +261,195 @@ export default function PacientesPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg md:text-xl">Registro de Pacientes</CardTitle>
-            <CardDescription className="text-sm">Lista completa de mascotas</CardDescription>
-            <div className="relative mt-4">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre, especie, raza, propietario o microchip..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+            <CardTitle className="text-lg md:text-xl">
+              Registro de Pacientes
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Lista completa de mascotas
+            </CardDescription>
+
+            {/* Barra de búsqueda y filtros */}
+            <div className="space-y-3 mt-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nombre, raza, propietario o microchip..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                {/* Filtro por Especie */}
+                <Select value={speciesFilter} onValueChange={setSpeciesFilter}>
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filtrar por especie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas las especies</SelectItem>
+                    <SelectItem value="Perro">Perro</SelectItem>
+                    <SelectItem value="Gato">Gato</SelectItem>
+                    <SelectItem value="Conejo">Conejo</SelectItem>
+                    <SelectItem value="Ave">Ave</SelectItem>
+                    <SelectItem value="Otro">Otro</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Filtro por Estado */}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filtrar por estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los estados</SelectItem>
+                    <SelectItem value="Activo">Activo</SelectItem>
+                    <SelectItem value="Inactivo">Inactivo</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Botón para limpiar filtros */}
+                {hasActiveFilters && (
+                  <Button
+                    variant="outline"
+                    onClick={clearFilters}
+                    className="gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Limpiar filtros
+                  </Button>
+                )}
+              </div>
+
+              {/* Contador de resultados */}
+              <p className="text-sm text-muted-foreground">
+                Mostrando {filteredPatients.length} de {patients.length}{" "}
+                pacientes
+              </p>
             </div>
           </CardHeader>
+
           <CardContent>
             <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="min-w-[120px]">Nombre</TableHead>
-                    <TableHead className="min-w-[140px]">Especie / Raza</TableHead>
+                    <TableHead className="min-w-[140px]">
+                      Especie / Raza
+                    </TableHead>
                     <TableHead className="min-w-[80px]">Edad</TableHead>
                     <TableHead className="min-w-[80px]">Peso</TableHead>
                     <TableHead className="min-w-[140px]">Propietario</TableHead>
-                    <TableHead className="min-w-[120px]">Última Visita</TableHead>
-                    <TableHead className="min-w-[120px]">Próxima Visita</TableHead>
+                    <TableHead className="min-w-[120px]">
+                      Última Visita
+                    </TableHead>
+                    <TableHead className="min-w-[120px]">
+                      Próxima Visita
+                    </TableHead>
                     <TableHead className="min-w-[80px]">Estado</TableHead>
-                    <TableHead className="text-right min-w-[80px]">Acciones</TableHead>
+                    <TableHead className="text-right min-w-[80px]">
+                      Acciones
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPatients.map((patient) => (
-                    <TableRow key={patient.id}>
-                      <TableCell className="font-medium">{patient.name}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <Badge variant={getSpeciesBadgeVariant(patient.species)} className="w-fit">
-                            {patient.species}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">{patient.breed}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{patient.age} años</TableCell>
-                      <TableCell className="text-muted-foreground">{patient.weight} kg</TableCell>
-                      <TableCell className="text-muted-foreground">{patient.ownerName}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(patient.lastVisit).toLocaleDateString("es-ES")}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(patient.nextVisit).toLocaleDateString("es-ES")}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={patient.status === "Activo" ? "default" : "secondary"}>{patient.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/pacientes/${patient.id}`}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Ver Historial
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditPatient(patient)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeletePatient(patient.id)}
-                              className="text-destructive"
+                  {filteredPatients.length > 0 ? (
+                    filteredPatients.map((patient) => (
+                      <TableRow key={patient.id}>
+                        <TableCell className="font-medium">
+                          {patient.name}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <Badge
+                              variant={getSpeciesBadgeVariant(patient.species)}
+                              className="w-fit"
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Eliminar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              {patient.species}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {patient.breed}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {patient.age} años
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {patient.weight} kg
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {patient.ownerName}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {patient.lastVisit
+                            ? new Date(patient.lastVisit).toLocaleDateString(
+                                "es-ES"
+                              )
+                            : "N/A"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {patient.nextVisit
+                            ? new Date(patient.nextVisit).toLocaleDateString(
+                                "es-ES"
+                              )
+                            : "N/A"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              patient.status === "Activo"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {patient.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link href={`/pacientes/${patient.id}`}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Ver Historial
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleEditPatient(patient)}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeletePatient(patient.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8">
+                        <p className="text-muted-foreground">
+                          No se encontraron pacientes con los filtros aplicados
+                        </p>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -313,8 +461,7 @@ export default function PacientesPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         patient={selectedPatient}
-        onSave={handleSavePatient}
       />
     </div>
-  )
+  );
 }

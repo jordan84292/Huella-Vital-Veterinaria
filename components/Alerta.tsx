@@ -24,7 +24,7 @@ export function Alerta() {
   }, [message.view]);
 
   return (
-    <div className="grid w-[200px] max-w-xl items-start gap-4 absolute top-2 left-2  z-999999">
+    <div className="grid w-[200px] max-w-xl items-start gap-4 absolute top-5 left-2  z-999999">
       {message.type == "Error" ? (
         <Alert variant={"destructive"}>
           <AlertCircleIcon />

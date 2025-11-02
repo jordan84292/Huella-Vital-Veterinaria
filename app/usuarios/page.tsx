@@ -64,12 +64,14 @@ type User = {
 
 export default function UsuariosPage() {
   const users = useSelector((state: RootState) => state.interface.users);
+  const currentUser = useSelector((state: RootState) => state.interface.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [rolFilter, setRolFilter] = useState<string>("todos");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const dispatch = useDispatch();
+
   useEffect(() => {
     const getUsers = async () => {
       const res = await axiosApi.get("/users");
@@ -118,6 +120,19 @@ export default function UsuariosPage() {
   };
 
   const handleDeleteUser = (id: string) => {
+    // Verificar si el usuario está intentando eliminarse a sí mismo
+    if (currentUser && currentUser.id === id) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Acción no permitida",
+          desc: "No puedes eliminar tu propia cuenta de usuario",
+        })
+      );
+      return;
+    }
+
     dispatch(setIsLoading(true));
     const sendData = async () => {
       try {
@@ -143,11 +158,11 @@ export default function UsuariosPage() {
             desc: error.response.data.message,
           })
         );
+      } finally {
+        dispatch(setIsLoading(false));
       }
     };
     sendData();
-
-    dispatch(setIsLoading(false));
   };
 
   const getRoleBadgeVariant = (role: User["rolName"]) => {
@@ -163,6 +178,11 @@ export default function UsuariosPage() {
       default:
         return "outline";
     }
+  };
+
+  // Función para verificar si es el usuario actual
+  const isCurrentUser = (userId: string) => {
+    return currentUser && currentUser.id === userId;
   };
 
   return (
@@ -216,10 +236,10 @@ export default function UsuariosPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los roles</SelectItem>
-                    <SelectItem value="Veterinario">Veterinario</SelectItem>
-                    <SelectItem value="Administrador">Administrador</SelectItem>
-                    <SelectItem value="Asistente">Asistente</SelectItem>
-                    <SelectItem value="Recepcionista">Recepcionista</SelectItem>
+                    <SelectItem value="2">Veterinario</SelectItem>
+                    <SelectItem value="1">Administrador</SelectItem>
+                    <SelectItem value="4">Asistente</SelectItem>
+                    <SelectItem value="3">Recepcionista</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -277,6 +297,11 @@ export default function UsuariosPage() {
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           {user.nombre}
+                          {isCurrentUser(user.id) && (
+                            <Badge variant="outline" className="ml-2 text-xs">
+                              Tú
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {user.email}
@@ -315,9 +340,12 @@ export default function UsuariosPage() {
                               <DropdownMenuItem
                                 onClick={() => handleDeleteUser(user.id)}
                                 className="text-destructive"
+                                disabled={isCurrentUser(user.id)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Eliminar
+                                {isCurrentUser(user.id)
+                                  ? "No puedes eliminarte"
+                                  : "Eliminar"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

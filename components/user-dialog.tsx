@@ -64,21 +64,12 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
 
   useEffect(() => {
     if (user) {
-      let rol;
-      user.rolName == "Administrador"
-        ? (rol = "1")
-        : user.rolName == "Veterinario"
-        ? (rol = "2")
-        : user.rolName == "Recepcionista"
-        ? (rol = "3")
-        : (rol = "4");
-
       setFormData({
         id: user.id,
         nombre: user.nombre,
         email: user.email,
         telefono: user.telefono,
-        rolName: rol,
+        rolName: user.rolName,
         status: user.status,
       });
     } else {
@@ -195,10 +186,10 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="2">Veterinario</SelectItem>
-                  <SelectItem value="4">Asistente</SelectItem>
-                  <SelectItem value="3">Recepcionista</SelectItem>
-                  <SelectItem value="1">Administrador</SelectItem>
+                  <SelectItem value="Administrador">Administrador</SelectItem>
+                  <SelectItem value="Veterinario">Veterinario</SelectItem>
+                  <SelectItem value="Asistente">Asistente</SelectItem>
+                  <SelectItem value="Recepcionista">Recepcionista</SelectItem>
                 </SelectContent>
               </Select>
             </div>
