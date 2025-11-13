@@ -1,27 +1,35 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   setIsLoading,
   setMessage,
+  setUsers,
   setVaccinations,
 } from "@/Redux/reducers/interfaceReducer";
 import { axiosApi } from "@/app/axiosApi/axiosApi";
+import { RootState } from "@/Redux/store";
 
 type Vaccination = {
   date: string;
@@ -36,7 +44,7 @@ type VaccinationDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   patientId: string;
-  onSuccess?: () => void; // Callback para recargar datos
+  onSuccess?: () => void;
 };
 
 export function VaccinationDialog({
@@ -45,6 +53,8 @@ export function VaccinationDialog({
   patientId,
 }: VaccinationDialogProps) {
   const dispatch = useDispatch();
+  const users = useSelector((state: RootState) => state.interface.users);
+
   const [formData, setFormData] = useState<Vaccination>({
     date: new Date().toISOString().split("T")[0],
     vaccine: "",
@@ -87,11 +97,13 @@ export function VaccinationDialog({
             res.data.message || "La vacunación se ha registrado correctamente",
         })
       );
+
       // Obtener vacunaciones del paciente
       const vaccinationsRes = await axiosApi.get(
         `/vaccinations/patient/${patientId}`
       );
       dispatch(setVaccinations(vaccinationsRes.data.data || []));
+
       // Resetear formulario
       setFormData({
         date: new Date().toISOString().split("T")[0],
@@ -117,70 +129,103 @@ export function VaccinationDialog({
     }
   };
 
+  useEffect(() => {
+    const loadData = async () => {
+      // Cargar usuarios/veterinarios si no están en Redux
+      if (users.length === 0) {
+        const resUsers = await axiosApi.get("/users");
+        dispatch(setUsers(resUsers.data.data));
+      }
+    };
+
+    if (open) {
+      loadData();
+    }
+  }, [open, users.length, dispatch]);
+
+  // Filtrar solo veterinarios activos
+  const veterinarians = users.filter(
+    (u) => u.rolName === "Veterinario" && u.status === "Activo"
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nueva Vacunación</DialogTitle>
           <DialogDescription>
             Registra una nueva vacuna aplicada
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="vaccine">Vacuna *</Label>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="vaccine">Vacuna *</Label>
+            <Input
+              id="vaccine"
+              value={formData.vaccine}
+              onChange={(e) =>
+                setFormData({ ...formData, vaccine: e.target.value })
+              }
+              placeholder="Polivalente (DHPP)"
+              required
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="date">Fecha de Aplicación *</Label>
               <Input
-                id="vaccine"
-                value={formData.vaccine}
-                onChange={(e) =>
-                  setFormData({ ...formData, vaccine: e.target.value })
-                }
-                placeholder="Polivalente (DHPP)"
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => handleDateChange(e.target.value)}
                 required
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="date">Fecha de Aplicación *</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="nextDue">Próxima Dosis *</Label>
-                <Input
-                  id="nextDue"
-                  type="date"
-                  value={formData.nextDue}
-                  onChange={(e) =>
-                    setFormData({ ...formData, nextDue: e.target.value })
-                  }
-                  min={formData.date}
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="nextDue">Próxima Dosis *</Label>
+              <Input
+                id="nextDue"
+                type="date"
+                value={formData.nextDue}
+                onChange={(e) =>
+                  setFormData({ ...formData, nextDue: e.target.value })
+                }
+                min={formData.date}
+                required
+              />
             </div>
+          </div>
 
-            <div className="grid gap-2">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
               <Label htmlFor="veterinarian">Veterinario *</Label>
-              <Input
-                id="veterinarian"
+              <Select
                 value={formData.veterinarian}
-                onChange={(e) =>
-                  setFormData({ ...formData, veterinarian: e.target.value })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, veterinarian: value })
                 }
-                placeholder="Dr. Carlos Rodriguez"
                 required
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un veterinario" />
+                </SelectTrigger>
+                <SelectContent>
+                  {veterinarians.length > 0 ? (
+                    veterinarians.map((vet) => (
+                      <SelectItem key={vet.id} value={vet.nombre}>
+                        Dr(a). {vet.nombre}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-vets" disabled>
+                      No hay veterinarios disponibles
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
-
-            <div className="grid gap-2">
+            <div className="space-y-2">
               <Label htmlFor="batchNumber">Número de Lote *</Label>
               <Input
                 id="batchNumber"
@@ -192,22 +237,22 @@ export function VaccinationDialog({
                 required
               />
             </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="notes">Notas Adicionales</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
-                placeholder="Observaciones adicionales..."
-                rows={2}
-              />
-            </div>
           </div>
 
-          <DialogFooter>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notas Adicionales</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
+              placeholder="Observaciones adicionales..."
+              rows={3}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
             <Button
               type="button"
               variant="outline"
@@ -216,7 +261,7 @@ export function VaccinationDialog({
               Cancelar
             </Button>
             <Button type="submit">Registrar Vacuna</Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

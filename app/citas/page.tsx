@@ -52,6 +52,7 @@ import {
   setMessage,
   setAppointments,
 } from "@/Redux/reducers/interfaceReducer";
+import { helpGetDate } from "@/helpers/helpGetDate";
 
 type Appointment = {
   id: string;
@@ -206,7 +207,7 @@ export default function CitasPage() {
   const totalCompletadas = appointments.filter(
     (a) => a.status === "Completada"
   ).length;
-  const today = new Date().toISOString().split("T")[0];
+  const today = helpGetDate();
   const totalHoy = appointments.filter(
     (a) => a.date.split("T")[0] == today
   ).length;

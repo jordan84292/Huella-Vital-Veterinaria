@@ -21,6 +21,7 @@ import {
 } from "@/Redux/reducers/interfaceReducer";
 import { axiosApi } from "../axiosApi/axiosApi";
 import { deleteAuthCookie, getAuthCookie } from "@/lib/auth/cookies";
+import { helpGetDate } from "@/helpers/helpGetDate";
 
 interface DashboardStats {
   totalUsers: number;
@@ -64,11 +65,12 @@ export default function DashboardPage() {
         const patientsStats = await axiosApi.get("/patients/stats");
 
         // Obtener citas de hoy
-        const today = new Date().toISOString().split("T")[0]; // Formato: YYYY-MM-DD
+        const today = helpGetDate(); // Formato: YYYY-MM-DD
 
         const appointmentsToday = await axiosApi.get(
           `/appointments/date/${today}`
         );
+        console.log(appointmentsToday);
 
         // Actualizar estadísticas
         setStats({

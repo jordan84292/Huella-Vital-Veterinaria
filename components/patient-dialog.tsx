@@ -44,7 +44,7 @@ type Patient = {
   ownerName: string;
   ownerId: string;
   nextVisit?: string;
-  lastVisit?: string;
+
   microchip?: string;
   color?: string;
   allergies?: string;
@@ -74,7 +74,6 @@ export function PatientDialog({
     gender: "Macho" as Patient["gender"],
     birthDate: "",
     ownerId: "",
-    lastVisit: "",
     nextVisit: "",
     microchip: "",
     color: "",
@@ -108,7 +107,6 @@ export function PatientDialog({
         gender: patient.gender,
         birthDate: patient.birthDate || "",
         ownerId: patient.ownerId,
-        lastVisit: patient.lastVisit || "",
         nextVisit: patient.nextVisit || "",
         microchip: patient.microchip || "",
         color: patient.color || "",
@@ -125,7 +123,6 @@ export function PatientDialog({
         gender: "Macho",
         birthDate: "",
         ownerId: "",
-        lastVisit: "",
         nextVisit: "",
         microchip: "",
         color: "",
@@ -151,7 +148,6 @@ export function PatientDialog({
         ownerId: formData.ownerId,
         status: formData.status,
         ...(formData.birthDate && { birthDate: formData.birthDate }),
-        ...(formData.lastVisit && { lastVisit: formData.lastVisit }),
         ...(formData.nextVisit && { nextVisit: formData.nextVisit }),
         ...(formData.microchip && { microchip: formData.microchip }),
         ...(formData.color && { color: formData.color }),
@@ -474,18 +470,6 @@ export function PatientDialog({
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="lastVisit">Última Visita</Label>
-                  <Input
-                    id="lastVisit"
-                    type="date"
-                    value={formData.lastVisit}
-                    onChange={(e) =>
-                      setFormData({ ...formData, lastVisit: e.target.value })
-                    }
-                    max={new Date().toISOString().split("T")[0]}
-                  />
-                </div>
-                <div className="grid gap-2">
                   <Label htmlFor="nextVisit">Próxima Visita</Label>
                   <Input
                     id="nextVisit"
@@ -493,10 +477,6 @@ export function PatientDialog({
                     value={formData.nextVisit}
                     onChange={(e) =>
                       setFormData({ ...formData, nextVisit: e.target.value })
-                    }
-                    min={
-                      formData.lastVisit ||
-                      new Date().toISOString().split("T")[0]
                     }
                   />
                 </div>

@@ -278,13 +278,14 @@ export default function PatientDetailPage() {
                   <span className="text-sm font-medium">{patient.color}</span>
                 </div>
               )}
+
               {patient.lastVisit && (
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
                     Última Visita
                   </span>
                   <span className="text-sm font-medium">
-                    {new Date(patient.lastVisit).toLocaleDateString("es-ES")}
+                    {patient.lastVisit.split("T")[0]}
                   </span>
                 </div>
               )}

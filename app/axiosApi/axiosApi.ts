@@ -1,6 +1,7 @@
 import axios from "axios";
 export const axiosApi = axios.create({
-  baseURL: "http://localhost:5000/api/v1",
+  baseURL:
+    "https://api-huella-vital-mxpk9qt0j-gonzalezjordan61-8380s-projects.vercel.app/api/v1",
   timeout: 5000,
   headers: {
     "Content-Type": "application/json",

@@ -11,9 +11,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "VetCare - Sistema de Gestión Veterinaria",
-  description: "Sistema completo de gestión para clínicas veterinarias",
-  generator: "v0.app",
+  title: "Huella vital",
+  description: "Gestión veterinaria",
 };
 
 export default function RootLayout({
