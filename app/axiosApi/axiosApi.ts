@@ -1,7 +1,7 @@
 import axios from "axios";
 export const axiosApi = axios.create({
   baseURL: "https://api-huella-vital.onrender.com/api/v1",
-  timeout: 5000,
+  timeout: 30000, // Aumentar el tiempo de espera a 30 segundos
   headers: {
     "Content-Type": "application/json",
   },
