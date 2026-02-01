@@ -30,6 +30,7 @@ import { useDispatch } from "react-redux";
 
 type Client = {
   id: string;
+  cedula?: string; // Añadir cedula como ID real
   name: string;
   email: string;
   phone: string;
@@ -64,7 +65,7 @@ export function ClientDialog({
   useEffect(() => {
     if (client) {
       setFormData({
-        id: client.id ?? "",
+        id: client.cedula || client.id || "", // Usar cedula como ID principal
         name: client.name,
         email: client.email,
         phone: client.phone,
@@ -87,12 +88,27 @@ export function ClientDialog({
         if (!client) {
           res = await axiosApi.post("/clients", formData);
         } else {
-          if (!formData.id || isNaN(Number(formData.id))) {
-            alert("ID de cliente no válido. No se puede actualizar.");
+          // Para actualizar, necesitamos usar la cédula como ID
+          const clientId = formData.id || client?.cedula || client?.id;
+
+          if (!clientId || isNaN(Number(clientId))) {
+            dispatch(
+              setMessage({
+                view: true,
+                type: "Error",
+                text: "Error de validación",
+                desc: "ID de cliente no válido. No se puede actualizar. Verifica que la cédula sea un número válido.",
+              }),
+            );
             dispatch(setIsLoading(false));
             return;
           }
-          res = await axiosApi.put(`/clients/${formData.id}`, formData);
+
+          console.log(`Actualizando cliente con ID/Cédula: ${clientId}`);
+          res = await axiosApi.put(`/clients/${clientId}`, {
+            ...formData,
+            cedula: clientId, // Asegurar que se envíe la cédula
+          });
         }
 
         dispatch(

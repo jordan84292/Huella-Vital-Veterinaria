@@ -58,7 +58,6 @@ type User = {
   nombre: string;
   email: string;
   rol: string; // código de rol
-
   status: "Activo" | "Inactivo";
   telefono: string;
 };
