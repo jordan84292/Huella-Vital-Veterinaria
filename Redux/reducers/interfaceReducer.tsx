@@ -25,7 +25,7 @@ export interface interfaceReducer {
     id: string;
     nombre: string;
     email: string;
-    rolName: "Veterinario" | "Asistente" | "Recepcionista" | "Administrador";
+    rol: number;
     status: "Activo" | "Inactivo";
     telefono: string;
   }>;
