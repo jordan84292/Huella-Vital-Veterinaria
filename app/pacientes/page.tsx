@@ -56,14 +56,14 @@ import {
 } from "@/Redux/reducers/interfaceReducer";
 
 type Patient = {
-  id: string;
+  id: number;
   name: string;
   species: "Perro" | "Gato" | "Conejo" | "Ave" | "Otro";
   breed: string;
   age: number;
   weight: number;
   gender: "Macho" | "Hembra";
-  birthDate?: string;
+  birthdate: string; // Cambio a birthdate (minúscula) para consistencia
   ownerName: string;
   ownerId: string;
   nextVisit?: string;
@@ -410,8 +410,8 @@ export default function PacientesPage() {
                     <TableHead className="min-w-[140px]">
                       Especie / Raza
                     </TableHead>
-                    <TableHead className="min-w-[80px]">Edad</TableHead>
-                    <TableHead className="min-w-[80px]">Peso</TableHead>
+                    <TableHead className="min-w-20">Edad</TableHead>
+                    <TableHead className="min-w-20">Peso</TableHead>
                     <TableHead className="min-w-[140px]">Propietario</TableHead>
                     <TableHead className="min-w-[120px]">
                       Última Visita
@@ -419,8 +419,8 @@ export default function PacientesPage() {
                     <TableHead className="min-w-[120px]">
                       Próxima Visita
                     </TableHead>
-                    <TableHead className="min-w-[80px]">Estado</TableHead>
-                    <TableHead className="text-right min-w-[80px]">
+                    <TableHead className="min-w-20">Estado</TableHead>
+                    <TableHead className="text-right min-w-20">
                       Acciones
                     </TableHead>
                   </TableRow>
@@ -466,7 +466,7 @@ export default function PacientesPage() {
                               return new Date(
                                 patient.lastVisit,
                               ).toLocaleDateString("es-ES");
-                            return `${new Date(visit.date).toLocaleDateString("es-ES")} - ${visit.description || ""}`;
+                            return `${new Date(visit.date).toLocaleDateString("es-ES")} - ${visit.diagnosis || visit.notes || ""}`;
                           })()}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
@@ -481,7 +481,7 @@ export default function PacientesPage() {
                               return new Date(
                                 patient.nextVisit,
                               ).toLocaleDateString("es-ES");
-                            return `${new Date(appointment.date).toLocaleDateString("es-ES")} - ${appointment.description || ""}`;
+                            return `${new Date(appointment.date).toLocaleDateString("es-ES")} - ${appointment.notes || ""}`;
                           })()}
                         </TableCell>
                         <TableCell>
@@ -510,7 +510,16 @@ export default function PacientesPage() {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleEditPatient(patient)}
+                                onClick={() => {
+                                  // Crear un nuevo objeto con cedula garantizada
+                                  const patientWithCedula: Patient = {
+                                    ...patient,
+                                    id: Number(patient.id),
+                                    cedula: patient.cedula || "",
+                                    birthdate: patient.birthdate || "",
+                                  };
+                                  handleEditPatient(patientWithCedula);
+                                }}
                               >
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Editar
@@ -546,7 +555,14 @@ export default function PacientesPage() {
       <PatientDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        patient={selectedPatient}
+        patient={
+          selectedPatient
+            ? {
+                ...selectedPatient,
+                birthdate: selectedPatient.birthdate || "",
+              }
+            : null
+        }
       />
     </div>
   );

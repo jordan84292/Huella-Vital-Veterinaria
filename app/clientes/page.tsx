@@ -45,8 +45,7 @@ type Client = {
   phone: string;
   address: string;
   city: string;
-  registrationDate?: string;
-  registrationdate?: string;
+  registrationDate: string;
   status: "Activo" | "Inactivo";
 };
 
@@ -212,8 +211,7 @@ export default function ClientesPage() {
 
                       <TableCell className="text-muted-foreground">
                         {(() => {
-                          const fecha =
-                            client.registrationdate || client.registrationDate;
+                          const fecha = client.registrationDate;
                           if (!fecha) return "-";
                           const d = new Date(fecha);
                           return isNaN(d.getTime())
