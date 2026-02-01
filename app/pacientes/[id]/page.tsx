@@ -34,7 +34,6 @@ import {
   setVisits,
 } from "@/Redux/reducers/interfaceReducer";
 import { axiosApi } from "@/app/axiosApi/axiosApi";
-import { array } from "zod";
 import { RootState } from "@/Redux/store";
 
 type Patient = {
@@ -49,7 +48,7 @@ type Patient = {
   ownerId: string;
   microchip?: string;
   status: string;
-  lastVisit?: string;
+  cedula?: string;
   birthDate?: string;
   color?: string;
   allergies?: string;
@@ -70,11 +69,9 @@ type Visit = {
 type Vaccination = {
   id: string;
   patientId: string;
-  date: string;
+  created_date: string;
   vaccine: string;
-  nextDue: string;
   veterinarian: string;
-  batchNumber: string;
   notes?: string;
 };
 
@@ -86,51 +83,68 @@ export default function PatientDetailPage() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const visits = useSelector((state: RootState) => state.interface.visits);
   const vaccinations = useSelector(
-    (state: RootState) => state.interface.vaccinations
+    (state: RootState) => state.interface.vaccinations,
   );
+  const [lastVisit, setLastVisit] = useState<any>(null);
+  const [nextAppointment, setNextAppointment] = useState<any>(null);
 
   const [visitDialogOpen, setVisitDialogOpen] = useState(false);
   const [vaccinationDialogOpen, setVaccinationDialogOpen] = useState(false);
   const [expandedVisit, setExpandedVisit] = useState<string | null>(null);
 
   // Cargar datos del paciente
-  useEffect(() => {
-    const fetchPatientData = async () => {
-      dispatch(setIsLoading(true));
-      try {
-        // Obtener datos del paciente
-        const patientRes = await axiosApi.get(`/patients/${patientId}`);
-        setPatient(patientRes.data.data);
+  const fetchPatientData = async () => {
+    dispatch(setIsLoading(true));
+    try {
+      // Obtener datos del paciente
+      const patientRes = await axiosApi.get(`/patients/${patientId}`);
+      setPatient(patientRes.data.data);
 
-        // Obtener visitas del paciente
-        const visitsRes = await axiosApi.get(`/visits/patient/${patientId}`);
-        dispatch(setVisits(visitsRes.data.data || []));
+      // Obtener visitas del paciente (y la última visita y próxima cita)
+      const visitsRes = await axiosApi.get(`/visits/patient/${patientId}`);
+      dispatch(setVisits(visitsRes.data.data || []));
 
-        // Obtener vacunaciones del paciente
-        const vaccinationsRes = await axiosApi.get(
-          `/vaccinations/patient/${patientId}`
-        );
-        dispatch(setVaccinations(vaccinationsRes.data.data || []));
-      } catch (error: any) {
-        dispatch(
-          setMessage({
-            view: true,
-            type: "Error",
-            text: "Error al cargar datos del paciente",
-            desc: error.response?.data?.message || error.message,
-          })
-        );
-      } finally {
-        dispatch(setIsLoading(false));
+      // Obtener última visita y próxima cita (nuevo endpoint)
+      const summaryRes = await axiosApi
+        .get(`/visits/patient/${patientId}/summary`)
+        .catch(() => null);
+      if (summaryRes && summaryRes.data) {
+        setLastVisit(summaryRes.data.lastVisit || null);
+        setNextAppointment(summaryRes.data.nextAppointment || null);
+      } else {
+        setLastVisit(null);
+        setNextAppointment(null);
       }
-    };
 
+      // Obtener vacunaciones del paciente
+      const vaccinationsRes = await axiosApi.get(
+        `/vaccinations/patient/${patientId}`,
+      );
+      dispatch(setVaccinations(vaccinationsRes.data.data || []));
+    } catch (error: any) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Error al cargar datos del paciente",
+          desc: error.response?.data?.message || error.message,
+        }),
+      );
+    } finally {
+      dispatch(setIsLoading(false));
+    }
+  };
+
+  useEffect(() => {
     if (patientId) {
       fetchPatientData();
     }
-  }, [patientId, dispatch]);
+  }, [patientId]);
 
-  const getVisitTypeBadge = (type: Visit["type"]) => {
+  // Función para obtener el badge variant según el tipo de visita
+  const getVisitTypeBadge = (
+    type: Visit["type"],
+  ): "default" | "secondary" | "destructive" | "outline" => {
     switch (type) {
       case "Emergencia":
         return "destructive";
@@ -143,23 +157,12 @@ export default function PatientDetailPage() {
 
   if (!patient) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader />
-        <DashboardSidebar />
-        <main className="ml-2 sm:ml-64 p-6">
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">
-                Paciente no encontrado
-              </p>
-            </CardContent>
-          </Card>
-        </main>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Parsear alergias si es un string JSON
   const allergies = (() => {
     try {
       if (typeof patient.allergies === "string") {
@@ -278,14 +281,23 @@ export default function PatientDetailPage() {
                   <span className="text-sm font-medium">{patient.color}</span>
                 </div>
               )}
-
-              {patient.lastVisit && (
+              {lastVisit && (
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
                     Última Visita
                   </span>
                   <span className="text-sm font-medium">
-                    {patient.lastVisit.split("T")[0]}
+                    {new Date(lastVisit.date).toLocaleDateString("es-ES")}
+                  </span>
+                </div>
+              )}
+              {nextAppointment && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Próxima Cita
+                  </span>
+                  <span className="text-sm font-medium">
+                    {new Date(nextAppointment.date).toLocaleDateString("es-ES")}
                   </span>
                 </div>
               )}
@@ -297,19 +309,17 @@ export default function PatientDetailPage() {
               <CardTitle>Propietario</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {patient.ownerName && (
+              {patient.name && (
                 <div className="flex justify-between border-b border-border pb-2">
                   <span className="text-sm text-muted-foreground">Nombre</span>
-                  <span className="text-sm font-medium">
-                    {patient.ownerName}
-                  </span>
+                  <span className="text-sm font-medium">{"Jordan"}</span>
                 </div>
               )}
               <div className="flex justify-between border-b border-border pb-2">
                 <span className="text-sm text-muted-foreground">
-                  ID Cliente
+                  ID Propietario
                 </span>
-                <span className="text-sm font-medium">{patient.ownerId}</span>
+                <span className="text-sm font-medium">{patient.cedula}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Alergias</span>
@@ -367,14 +377,14 @@ export default function PatientDetailPage() {
                   ]
                     .sort(
                       (a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime()
+                        new Date(b.date).getTime() - new Date(a.date).getTime(),
                     )
                     .map((event) => (
                       <div
                         key={`${event.eventType}-${event.id}`}
                         className="flex gap-4 border-l-2 border-primary pl-4 pb-4 last:pb-0"
                       >
-                        <div className="flex-shrink-0 w-24 pt-1">
+                        <div className="shrink-0 w-24 pt-1">
                           <p className="text-sm font-medium">
                             {new Date(event.date).toLocaleDateString("es-ES")}
                           </p>
@@ -435,16 +445,13 @@ export default function PatientDetailPage() {
                               <>
                                 <div className="flex items-center gap-2 text-sm">
                                   <span className="font-medium">
-                                    Próxima dosis:
+                                    Fecha dosis:
                                   </span>
                                   <Badge variant="secondary">
                                     {new Date(
-                                      (event as Vaccination).nextDue
+                                      (event as Vaccination).created_date,
                                     ).toLocaleDateString("es-ES")}
                                   </Badge>
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  Lote: {(event as Vaccination).batchNumber}
                                 </div>
                               </>
                             )}
@@ -490,7 +497,7 @@ export default function PatientDetailPage() {
                           className="cursor-pointer hover:bg-muted/50 transition-colors"
                           onClick={() =>
                             setExpandedVisit(
-                              expandedVisit === visit.id ? null : visit.id
+                              expandedVisit === visit.id ? null : visit.id,
                             )
                           }
                         >
@@ -508,7 +515,7 @@ export default function PatientDetailPage() {
                                       year: "numeric",
                                       month: "long",
                                       day: "numeric",
-                                    }
+                                    },
                                   )}
                                 </CardDescription>
                               </div>
@@ -597,34 +604,28 @@ export default function PatientDetailPage() {
                       <TableRow>
                         <TableHead>Fecha</TableHead>
                         <TableHead>Vacuna</TableHead>
-                        <TableHead>Próxima Dosis</TableHead>
                         <TableHead>Veterinario</TableHead>
-                        <TableHead>Lote</TableHead>
+                        <TableHead>Notas</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {vaccinations.map((vaccination) => (
                         <TableRow key={vaccination.id}>
                           <TableCell className="font-medium">
-                            {new Date(vaccination.date).toLocaleDateString(
-                              "es-ES"
-                            )}
+                            {vaccination.created_date
+                              ? new Date(
+                                  vaccination.created_date,
+                                ).toLocaleDateString("es-ES")
+                              : "-"}
                           </TableCell>
                           <TableCell className="font-medium">
                             {vaccination.vaccine}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {new Date(vaccination.nextDue).toLocaleDateString(
-                                "es-ES"
-                              )}
-                            </Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {vaccination.veterinarian}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {vaccination.batchNumber}
+                            {vaccination.notes || "-"}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -643,12 +644,24 @@ export default function PatientDetailPage() {
 
       <VisitDialog
         open={visitDialogOpen}
-        onOpenChange={setVisitDialogOpen}
+        onOpenChange={(open) => {
+          setVisitDialogOpen(open);
+          if (!open) {
+            // Al cerrar el diálogo, refrescar datos del paciente
+            fetchPatientData();
+          }
+        }}
         patientId={patient.id}
       />
       <VaccinationDialog
         open={vaccinationDialogOpen}
-        onOpenChange={setVaccinationDialogOpen}
+        onOpenChange={(open) => {
+          setVaccinationDialogOpen(open);
+          if (!open) {
+            // Al cerrar el diálogo, refrescar datos del paciente
+            fetchPatientData();
+          }
+        }}
         patientId={patient.id}
       />
     </div>

@@ -68,12 +68,85 @@ export function VisitDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validaciones frontend
+    if (!formData.date) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Fecha requerida",
+          desc: "La fecha de la visita es obligatoria.",
+        }),
+      );
+      return;
+    }
+    if (!formData.type) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Tipo requerido",
+          desc: "El tipo de visita es obligatorio.",
+        }),
+      );
+      return;
+    }
+    if (!formData.veterinarian) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Veterinario requerido",
+          desc: "Debes seleccionar un veterinario.",
+        }),
+      );
+      return;
+    }
+    if (!formData.diagnosis.trim()) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Diagnóstico requerido",
+          desc: "El diagnóstico es obligatorio.",
+        }),
+      );
+      return;
+    }
+    if (!formData.treatment.trim()) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Tratamiento requerido",
+          desc: "El tratamiento es obligatorio.",
+        }),
+      );
+      return;
+    }
+    if (formData.cost <= 0 || isNaN(formData.cost)) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Costo inválido",
+          desc: "El costo debe ser mayor a 0.",
+        }),
+      );
+      return;
+    }
     dispatch(setIsLoading(true));
 
     try {
       const res = await axiosApi.post("/visits", {
-        ...formData,
-        patientId: patientId,
+        cost: formData.cost,
+        date: formData.date,
+        diagnosis: formData.diagnosis,
+        notes: formData.notes,
+        patientid: Number(patientId), // Enviar como 'patientid' en minúsculas
+        treatment: formData.treatment,
+        type: formData.type,
+        veterinarian: formData.veterinarian,
       });
 
       dispatch(
@@ -82,11 +155,12 @@ export function VisitDialog({
           type: "",
           text: "Visita registrada",
           desc: res.data.message || "La visita se ha registrado correctamente",
-        })
+        }),
       );
 
       // Obtener visitas del paciente
       const visitsRes = await axiosApi.get(`/visits/patient/${patientId}`);
+
       dispatch(setVisits(visitsRes.data.data || []));
 
       // Resetear formulario
@@ -102,15 +176,13 @@ export function VisitDialog({
 
       onOpenChange(false);
     } catch (error: any) {
-      console.log(error);
-
       dispatch(
         setMessage({
           view: true,
           type: "Error",
           text: "Error al registrar visita",
           desc: error.response?.data?.message || error.message,
-        })
+        }),
       );
     } finally {
       dispatch(setIsLoading(false));
@@ -122,6 +194,7 @@ export function VisitDialog({
       // Cargar usuarios/veterinarios si no están en Redux
       if (users.length === 0) {
         const resUsers = await axiosApi.get("/users");
+
         dispatch(setUsers(resUsers.data.data));
       }
     };
@@ -131,9 +204,9 @@ export function VisitDialog({
     }
   }, [open, users.length, dispatch]);
 
-  // Filtrar solo veterinarios activos
+  // Filtrar solo veterinarios activos (rol = "2")
   const veterinarians = users.filter(
-    (u) => u.rolName === "Veterinario" && u.status === "Activo"
+    (u) => u.rol === "2" && u.status === "Activo",
   );
 
   return (
@@ -145,7 +218,123 @@ export function VisitDialog({
             Registra una nueva consulta o tratamiento
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            // Validaciones frontend según reglas del backend
+            // Fecha
+            if (!formData.date || isNaN(Date.parse(formData.date))) {
+              dispatch(
+                setMessage({
+                  view: true,
+                  type: "Error",
+                  text: "Fecha requerida",
+                  desc: "La fecha de la visita es obligatoria y debe ser válida.",
+                }),
+              );
+              return;
+            }
+            // Tipo
+            const tiposValidos = [
+              "Consulta",
+              "Vacunación",
+              "Cirugía",
+              "Control",
+              "Emergencia",
+            ];
+            if (!formData.type || !tiposValidos.includes(formData.type)) {
+              dispatch(
+                setMessage({
+                  view: true,
+                  type: "Error",
+                  text: "Tipo requerido",
+                  desc: "El tipo de visita es obligatorio y debe ser válido.",
+                }),
+              );
+              return;
+            }
+            // Veterinario
+            if (
+              !formData.veterinarian ||
+              formData.veterinarian.trim().length < 2 ||
+              formData.veterinarian.trim().length > 150
+            ) {
+              dispatch(
+                setMessage({
+                  view: true,
+                  type: "Error",
+                  text: "Veterinario requerido",
+                  desc: "Debes seleccionar un veterinario válido (2-150 caracteres).",
+                }),
+              );
+              return;
+            }
+            // Diagnóstico
+            if (
+              !formData.diagnosis.trim() ||
+              formData.diagnosis.trim().length < 5 ||
+              formData.diagnosis.trim().length > 1000
+            ) {
+              dispatch(
+                setMessage({
+                  view: true,
+                  type: "Error",
+                  text: "Diagnóstico requerido",
+                  desc: "El diagnóstico es obligatorio (5-1000 caracteres).",
+                }),
+              );
+              return;
+            }
+            // Tratamiento
+            if (
+              !formData.treatment.trim() ||
+              formData.treatment.trim().length < 5 ||
+              formData.treatment.trim().length > 1000
+            ) {
+              dispatch(
+                setMessage({
+                  view: true,
+                  type: "Error",
+                  text: "Tratamiento requerido",
+                  desc: "El tratamiento es obligatorio (5-1000 caracteres).",
+                }),
+              );
+              return;
+            }
+            // Notas
+            if (formData.notes && formData.notes.length > 1000) {
+              dispatch(
+                setMessage({
+                  view: true,
+                  type: "Error",
+                  text: "Notas demasiado largas",
+                  desc: "Las notas no pueden exceder 1000 caracteres.",
+                }),
+              );
+              return;
+            }
+            // Costo
+            if (
+              formData.cost === null ||
+              formData.cost === undefined ||
+              isNaN(formData.cost) ||
+              formData.cost < 0 ||
+              formData.cost > 99999999999999
+            ) {
+              dispatch(
+                setMessage({
+                  view: true,
+                  type: "Error",
+                  text: "Costo inválido",
+                  desc: "El costo debe ser un número entre 0 y 99999999999999.",
+                }),
+              );
+              return;
+            }
+            handleSubmit(e);
+          }}
+          className="space-y-4"
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="date">Fecha *</Label>

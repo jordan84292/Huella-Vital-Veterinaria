@@ -44,7 +44,7 @@ export function DashboardHeader() {
       } catch (error: any) {
         console.error(
           "Error al cargar perfil:",
-          error.response?.data || error.message
+          error.response?.data || error.message,
         );
         deleteAuthCookie();
         // Opcional: Mostrar mensaje de error al usuario
@@ -54,7 +54,7 @@ export function DashboardHeader() {
             type: "Error",
             text: "Error al cargar perfil",
             desc: error.response?.data?.message || error.message,
-          })
+          }),
         );
       }
     };
@@ -93,7 +93,12 @@ export function DashboardHeader() {
                     alt="Usuario"
                   />
                   <AvatarFallback className="bg-primary text-primary-foreground ">
-                    {user.rolName.slice(0, 4)}
+                    {(user.nombre || "U")
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden flex-col items-start text-left md:flex">

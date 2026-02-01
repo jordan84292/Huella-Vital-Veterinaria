@@ -57,9 +57,14 @@ export function AppointmentDialog({
   onOpenChange,
   appointment,
 }: AppointmentDialogProps) {
+  // Obtener la fecha de hoy en formato YYYY-MM-DD
+  // Estado para mostrar errores del backend
+  const [backendError, setBackendError] = useState<string>("");
+  const todayStr = new Date().toISOString().split("T")[0];
   const patients = useSelector((state: RootState) => state.interface.patients);
   const clients = useSelector((state: RootState) => state.interface.clients);
   const users = useSelector((state: RootState) => state.interface.users);
+
   const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
@@ -81,13 +86,13 @@ export function AppointmentDialog({
       try {
         // Cargar pacientes si no están en Redux
         if (patients.length === 0) {
-          const resPatients = await axiosApi.get("/patients");
+          const resPatients = await axiosApi.get("/patients?limit=1000");
           dispatch(setPatients(resPatients.data.data));
         }
 
         // Cargar clientes si no están en Redux
         if (clients.length === 0) {
-          const resClients = await axiosApi.get("/clients");
+          const resClients = await axiosApi.get("/clients?limit=1000");
           dispatch(setClients(resClients.data.data));
         }
 
@@ -118,17 +123,21 @@ export function AppointmentDialog({
         notes: appointment.notes || "",
       });
 
-      // Buscar el paciente y su propietario
+      // Debug: mostrar cómo se busca el paciente y propietario
       const patient = patients.find(
-        (p) => String(p.id) === String(appointment.patientId)
+        (p: any) => String(p.id) === String(appointment.patientId),
       );
+
       if (patient) {
         setSelectedPatientName(patient.name || "");
 
-        // Buscar el nombre del propietario en la lista de clientes
         const owner = clients.find(
-          (c) => String(c.id) === String(patient.ownerId)
+          (c: any) =>
+            c.cedula &&
+            patient.cedula &&
+            String(c.cedula) === String(patient.cedula),
         );
+
         setOwnerName(owner?.name || "");
       }
     } else {
@@ -153,18 +162,19 @@ export function AppointmentDialog({
     // Buscar el paciente seleccionado y actualizar información del propietario
     // Convertir ambos valores a string para la comparación
     const selectedPatient = patients.find(
-      (p) => String(p.id) === String(patientId)
+      (p: any) => String(p.id) === String(patientId),
     );
 
     if (selectedPatient) {
       setSelectedPatientName(selectedPatient.name || "");
 
-      // Buscar el nombre del propietario en la lista de clientes usando ownerId
-      // Convertir ambos valores a string para la comparación
+      // Buscar el nombre del propietario en la lista de clientes usando cedula
       const owner = clients.find(
-        (c) => String(c.id) === String(selectedPatient.ownerId)
+        (c: any) =>
+          c.cedula &&
+          selectedPatient.cedula &&
+          String(c.cedula) === String(selectedPatient.cedula),
       );
-
       setOwnerName(owner?.name || "Propietario no encontrado");
     } else {
       setSelectedPatientName("");
@@ -174,35 +184,154 @@ export function AppointmentDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setBackendError("");
+    // Validaciones frontend según reglas del backend
+    // Paciente
+    if (
+      !formData.patientId ||
+      isNaN(Number(formData.patientId)) ||
+      Number(formData.patientId) < 1
+    ) {
+      setBackendError(
+        "El ID del paciente es requerido y debe ser un número positivo.",
+      );
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Paciente inválido",
+          desc: "El ID del paciente es requerido y debe ser un número positivo.",
+        }),
+      );
+      return;
+    }
+    // Fecha
+    if (!formData.date || isNaN(Date.parse(formData.date))) {
+      setBackendError("La fecha es requerida y debe ser válida.");
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Fecha inválida",
+          desc: "La fecha es requerida y debe ser válida.",
+        }),
+      );
+      return;
+    }
+    // Hora
+    if (
+      !formData.time ||
+      !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(formData.time)
+    ) {
+      setBackendError("La hora es requerida y debe estar en formato HH:MM.");
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Hora inválida",
+          desc: "La hora es requerida y debe estar en formato HH:MM.",
+        }),
+      );
+      return;
+    }
+    // Tipo
+    const tiposValidos = [
+      "Consulta",
+      "Vacunación",
+      "Cirugía",
+      "Control",
+      "Emergencia",
+    ];
+    if (!formData.type || !tiposValidos.includes(formData.type)) {
+      setBackendError("El tipo de cita es requerido y debe ser válido.");
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Tipo inválido",
+          desc: "El tipo de cita es requerido y debe ser válido.",
+        }),
+      );
+      return;
+    }
+    // Veterinario
+    if (
+      !formData.veterinarian ||
+      formData.veterinarian.trim().length < 2 ||
+      formData.veterinarian.trim().length > 255
+    ) {
+      setBackendError("El veterinario es requerido (2-255 caracteres).");
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Veterinario inválido",
+          desc: "El veterinario es requerido (2-255 caracteres).",
+        }),
+      );
+      return;
+    }
+    // Estado
+    const estadosValidos = ["Programada", "Completada", "Cancelada"];
+    if (formData.status && !estadosValidos.includes(formData.status)) {
+      setBackendError("El estado no es válido.");
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Estado inválido",
+          desc: "El estado no es válido.",
+        }),
+      );
+      return;
+    }
+    // Notas
+    if (formData.notes && typeof formData.notes !== "string") {
+      setBackendError("Las notas deben ser texto.");
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Notas inválidas",
+          desc: "Las notas deben ser texto.",
+        }),
+      );
+      return;
+    }
     dispatch(setIsLoading(true));
 
     try {
+      let res;
       if (appointment) {
         // Actualizar cita existente
-        const res = await axiosApi.put(
-          `/appointments/${appointment.id}`,
-          formData
-        );
-        dispatch(
-          setMessage({
-            view: true,
-            type: "",
-            text: "Success!!",
-            desc: res.data.message,
-          })
-        );
+        res = await axiosApi.put(`/appointments/${appointment.id}`, formData);
       } else {
         // Crear nueva cita
-        const res = await axiosApi.post("/appointments", formData);
+        res = await axiosApi.post("/appointments", formData);
+      }
+
+      // Si el backend devuelve error, mostrarlo
+      if (res.data && res.data.error) {
+        setBackendError(res.data.error);
         dispatch(
           setMessage({
             view: true,
-            type: "",
-            text: "Success!!",
-            desc: res.data.message,
-          })
+            type: "Error",
+            text: "Error",
+            desc: res.data.error,
+          }),
         );
+        return;
       }
+
+      dispatch(
+        setMessage({
+          view: true,
+          type: "",
+          text: "Success!!",
+          desc: res.data.message,
+        }),
+      );
 
       // Refrescar lista de citas
       const refresh = await axiosApi.get("/appointments");
@@ -210,13 +339,16 @@ export function AppointmentDialog({
 
       onOpenChange(false);
     } catch (error: any) {
+      const errorMsg =
+        error.response?.data?.message || error.message || "Error desconocido";
+      setBackendError(errorMsg);
       dispatch(
         setMessage({
           view: true,
           type: "Error",
           text: error.response?.statusText || "Error",
-          desc: error.response?.data?.message || error.message,
-        })
+          desc: errorMsg,
+        }),
       );
     } finally {
       dispatch(setIsLoading(false));
@@ -226,10 +358,8 @@ export function AppointmentDialog({
   // Filtrar solo pacientes activos
   const activePatients = patients.filter((p) => p.status === "Activo");
 
-  // Filtrar solo veterinarios activos
-  const veterinarians = users.filter(
-    (u) => u.rolName === "Veterinario" && u.status === "Activo"
-  );
+  // Filtrar solo veterinarios (rol === "2")
+  const veterinarians = users.filter((u) => u.rolName === "Veterinario");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -245,6 +375,11 @@ export function AppointmentDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {backendError && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-2">
+              <strong>Error:</strong> {backendError}
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="patientId">Paciente *</Label>
             <Select
@@ -258,9 +393,12 @@ export function AppointmentDialog({
               <SelectContent>
                 {activePatients.length > 0 ? (
                   activePatients.map((patient) => {
-                    // Buscar el nombre del propietario
+                    // Buscar el nombre del propietario usando cedula
                     const owner = clients.find(
-                      (c) => String(c.id) === String(patient.ownerId)
+                      (c: any) =>
+                        c.cedula &&
+                        patient.cedula &&
+                        String(c.cedula) === String(patient.cedula),
                     );
                     const ownerName = owner?.name || "Sin propietario";
 
@@ -293,6 +431,7 @@ export function AppointmentDialog({
                 id="date"
                 type="date"
                 value={formData.date}
+                min={todayStr}
                 onChange={(e) =>
                   setFormData({ ...formData, date: e.target.value })
                 }

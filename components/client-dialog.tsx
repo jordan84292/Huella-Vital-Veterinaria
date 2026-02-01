@@ -45,7 +45,7 @@ type ClientDialogProps = {
   client: Client | null;
 };
 const initialForm = {
-  id: "",
+  id: undefined,
   name: "",
   email: "",
   phone: "",
@@ -64,7 +64,7 @@ export function ClientDialog({
   useEffect(() => {
     if (client) {
       setFormData({
-        id: client.id,
+        id: client.id ?? client.cedula ?? "",
         name: client.name,
         email: client.email,
         phone: client.phone,
@@ -87,6 +87,11 @@ export function ClientDialog({
         if (!client) {
           res = await axiosApi.post("/clients", formData);
         } else {
+          if (!formData.id || isNaN(Number(formData.id))) {
+            alert("ID de cliente no válido. No se puede actualizar.");
+            dispatch(setIsLoading(false));
+            return;
+          }
           res = await axiosApi.put(`/clients/${formData.id}`, formData);
         }
 
@@ -96,7 +101,7 @@ export function ClientDialog({
             type: "",
             text: "Success!!",
             desc: res.data.message,
-          })
+          }),
         );
 
         const refresh = await axiosApi.get("/clients");
@@ -111,7 +116,7 @@ export function ClientDialog({
             type: "Error",
             text: error.response.statusText,
             desc: error.response.data.message,
-          })
+          }),
         );
       }
     };

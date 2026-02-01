@@ -72,10 +72,20 @@ type Patient = {
   color?: string;
   allergies?: string;
   status: "Activo" | "Inactivo";
+  cedula: string;
 };
 
 export default function PacientesPage() {
   const patients = useSelector((state: RootState) => state.interface.patients);
+  const visits = useSelector(
+    (state: RootState) => state.interface.visits || [],
+  );
+  const appointments = useSelector(
+    (state: RootState) => state.interface.appointments || [],
+  );
+  const clients = useSelector(
+    (state: RootState) => state.interface.clients || [],
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [speciesFilter, setSpeciesFilter] = useState<string>("todos");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
@@ -83,30 +93,90 @@ export default function PacientesPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const dispatch = useDispatch();
 
+  // Enriquecer pacientes con última visita, próxima cita y nombre de propietario (usando campos reales)
+  const patientsWithVisits = patients.map((patient) => {
+    // Buscar visitas del paciente y obtener la más reciente (usando patientid)
+    const patientVisits = visits.filter(
+      (v: any) => String(v.patientid) === String(patient.id),
+    );
+    const lastVisit =
+      patientVisits.length > 0
+        ? patientVisits.reduce((latest: any, curr: any) =>
+            new Date(curr.date) > new Date(latest.date) ? curr : latest,
+          ).date
+        : undefined;
+
+    // Buscar citas futuras del paciente y obtener la más próxima (usando patientid)
+    const now = new Date();
+    const patientAppointments = appointments.filter(
+      (a: any) =>
+        String(a.patientid) === String(patient.id) && new Date(a.date) > now,
+    );
+    const nextAppointment =
+      patientAppointments.length > 0
+        ? patientAppointments.reduce((soonest: any, curr: any) =>
+            new Date(curr.date) < new Date(soonest.date) ? curr : soonest,
+          ).date
+        : undefined;
+
+    // Buscar nombre del propietario por cedula
+    let ownerName = patient.ownerName;
+    if ((!ownerName || ownerName === "") && patient.cedula) {
+      const client = clients.find(
+        (c: any) => String(c.cedula) === String(patient.cedula),
+      );
+      if (client && client.name) {
+        ownerName = client.name;
+      }
+    }
+
+    return {
+      ...patient,
+      lastVisit,
+      nextVisit: nextAppointment,
+      ownerName,
+    };
+  });
+
   useEffect(() => {
-    const getPatients = async () => {
+    const getAllData = async () => {
       dispatch(setIsLoading(true));
       try {
-        const res = await axiosApi.get("/patients");
-        dispatch(setPatients(res.data.data));
+        const [patientsRes, visitsRes, appointmentsRes, clientsRes] =
+          await Promise.all([
+            axiosApi.get("/patients"),
+            axiosApi.get("/visits"),
+            axiosApi.get("/appointments"),
+            axiosApi.get("/clients"),
+          ]);
+        dispatch(setPatients(patientsRes.data.data));
+        dispatch({ type: "interface/setVisits", payload: visitsRes.data.data });
+        dispatch({
+          type: "interface/setAppointments",
+          payload: appointmentsRes.data.data,
+        });
+        dispatch({
+          type: "interface/setClients",
+          payload: clientsRes.data.data,
+        });
       } catch (error: any) {
         dispatch(
           setMessage({
             view: true,
             type: "Error",
-            text: "Error al cargar pacientes",
+            text: "Error al cargar datos",
             desc: error.response?.data?.message || error.message,
-          })
+          }),
         );
       } finally {
         dispatch(setIsLoading(false));
       }
     };
-    getPatients();
+    getAllData();
   }, [dispatch]);
 
   // Función de filtrado
-  const filteredPatients = patients.filter((patient) => {
+  const filteredPatients = patientsWithVisits.filter((patient) => {
     const matchesSearch =
       patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       patient.breed.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -155,7 +225,7 @@ export default function PacientesPage() {
             type: "",
             text: "Success!!",
             desc: res.data.message,
-          })
+          }),
         );
 
         const refresh = await axiosApi.get("/patients");
@@ -167,7 +237,7 @@ export default function PacientesPage() {
             type: "Error",
             text: error.response?.statusText || "Error",
             desc: error.response?.data?.message || error.message,
-          })
+          }),
         );
       } finally {
         dispatch(setIsLoading(false));
@@ -191,7 +261,7 @@ export default function PacientesPage() {
   const totalPerros = patients.filter((p) => p.species === "Perro").length;
   const totalGatos = patients.filter((p) => p.species === "Gato").length;
   const totalOtros = patients.filter(
-    (p) => p.species !== "Perro" && p.species !== "Gato"
+    (p) => p.species !== "Perro" && p.species !== "Gato",
   ).length;
 
   return (
@@ -385,18 +455,34 @@ export default function PacientesPage() {
                           {patient.ownerName}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {patient.lastVisit
-                            ? new Date(patient.lastVisit).toLocaleDateString(
-                                "es-ES"
-                              )
-                            : "N/A"}
+                          {(() => {
+                            if (!patient.lastVisit) return "N/A";
+                            const visit = visits.find(
+                              (v: any) =>
+                                v.patientId === patient.id &&
+                                v.date === patient.lastVisit,
+                            );
+                            if (!visit)
+                              return new Date(
+                                patient.lastVisit,
+                              ).toLocaleDateString("es-ES");
+                            return `${new Date(visit.date).toLocaleDateString("es-ES")} - ${visit.description || ""}`;
+                          })()}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {patient.nextVisit
-                            ? new Date(patient.nextVisit).toLocaleDateString(
-                                "es-ES"
-                              )
-                            : "N/A"}
+                          {(() => {
+                            if (!patient.nextVisit) return "N/A";
+                            const appointment = appointments.find(
+                              (a: any) =>
+                                a.patientId === patient.id &&
+                                a.date === patient.nextVisit,
+                            );
+                            if (!appointment)
+                              return new Date(
+                                patient.nextVisit,
+                              ).toLocaleDateString("es-ES");
+                            return `${new Date(appointment.date).toLocaleDateString("es-ES")} - ${appointment.description || ""}`;
+                          })()}
                         </TableCell>
                         <TableCell>
                           <Badge

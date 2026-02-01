@@ -33,22 +33,21 @@ import {
 import { axiosApi } from "@/app/axiosApi/axiosApi";
 
 type Patient = {
-  id: string;
+  id: number;
   name: string;
   species: "Perro" | "Gato" | "Conejo" | "Ave" | "Otro";
   breed: string;
   age: number;
   weight: number;
   gender: "Macho" | "Hembra" | "Desconocido";
-  birthDate?: string;
-  ownerName: string;
-  ownerId: string;
-  nextVisit?: string;
-
-  microchip?: string;
+  birthdate: string;
+  cedula: string;
   color?: string;
-  allergies?: string;
+  allergies?: string | null;
   status: "Activo" | "Inactivo";
+  created_date?: string;
+  updated_date?: string;
+  ownerName?: string;
 };
 
 type PatientDialogProps = {
@@ -69,13 +68,10 @@ export function PatientDialog({
     name: "",
     species: "Perro" as Patient["species"],
     breed: "",
-    age: 0,
     weight: 0,
     gender: "Macho" as Patient["gender"],
     birthDate: "",
     ownerId: "",
-    nextVisit: "",
-    microchip: "",
     color: "",
     allergies: "",
     status: "Activo" as Patient["status"],
@@ -98,17 +94,54 @@ export function PatientDialog({
 
   useEffect(() => {
     if (patient) {
+      // Log del formData después de setearlo
+      setTimeout(() => {}, 500);
+      // Si hay cedula, consultar el cliente y actualizar ownerName
+      if (patient.cedula) {
+        (async () => {
+          try {
+            const res = await axiosApi.get(`/clients/${patient.cedula}`);
+
+            const client = res.data?.data;
+            setFormData((prev) => ({
+              ...prev,
+              ownerName: client?.name || "",
+            }));
+          } catch (err) {
+            setFormData((prev) => ({ ...prev, ownerName: "" }));
+          }
+        })();
+      }
+      let safeWeight = patient.weight;
+      if (!safeWeight || safeWeight <= 0) {
+        safeWeight = 0.1;
+        dispatch(
+          setMessage({
+            view: true,
+            type: "Error",
+            text: "Peso inválido",
+            desc: "El paciente no tenía peso registrado. Se ha ajustado a 0.1 kg.",
+          }),
+        );
+      }
+      // Tomar birthdate (minúscula) o birthDate (mayúscula) y formatear a yyyy-MM-dd
+      let birthDateRaw = patient.birthdate || "";
+      let birthDateFormatted = "";
+      if (birthDateRaw) {
+        const d = new Date(birthDateRaw);
+        if (!isNaN(d.getTime())) {
+          birthDateFormatted = d.toISOString().slice(0, 10);
+        }
+      }
       setFormData({
         name: patient.name,
         species: patient.species,
         breed: patient.breed,
-        age: patient.age,
-        weight: patient.weight,
+        weight: safeWeight,
         gender: patient.gender,
-        birthDate: patient.birthDate || "",
-        ownerId: patient.ownerId,
-        nextVisit: patient.nextVisit || "",
-        microchip: patient.microchip || "",
+        birthDate: birthDateFormatted,
+        // ownerName eliminado, no existe en el tipo
+        ownerId: patient.cedula || "",
         color: patient.color || "",
         allergies: patient.allergies || "",
         status: patient.status,
@@ -118,13 +151,10 @@ export function PatientDialog({
         name: "",
         species: "Perro",
         breed: "",
-        age: 0,
-        weight: 0,
+        weight: 0.1,
         gender: "Macho",
         birthDate: "",
         ownerId: "",
-        nextVisit: "",
-        microchip: "",
         color: "",
         allergies: "",
         status: "Activo",
@@ -134,29 +164,206 @@ export function PatientDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validaciones frontend para evitar errores en el backend
+    // Validaciones frontend según reglas del backend
+    // Nombre: 2-100 caracteres
+    if (
+      !formData.name.trim() ||
+      formData.name.trim().length < 2 ||
+      formData.name.trim().length > 100
+    ) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Nombre requerido",
+          desc: "El nombre del paciente es obligatorio (2-100 caracteres).",
+        }),
+      );
+      return;
+    }
+    // Especie: 2-50 caracteres, solo letras y espacios
+    if (
+      !formData.species ||
+      formData.species.trim().length < 2 ||
+      formData.species.trim().length > 50
+    ) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Especie requerida",
+          desc: "La especie es obligatoria (2-50 caracteres).",
+        }),
+      );
+      return;
+    }
+    if (!/^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/.test(formData.species)) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Especie inválida",
+          desc: "La especie solo puede contener letras y espacios.",
+        }),
+      );
+      return;
+    }
+    // Raza: 2-100 caracteres
+    if (
+      !formData.breed.trim() ||
+      formData.breed.trim().length < 2 ||
+      formData.breed.trim().length > 100
+    ) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Raza requerida",
+          desc: "La raza es obligatoria (2-100 caracteres).",
+        }),
+      );
+      return;
+    }
+    // Peso: 0-1000
+    if (!formData.weight || formData.weight <= 0 || formData.weight > 1000) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Peso requerido",
+          desc: "El peso debe ser mayor a 0 y menor o igual a 1000 kg.",
+        }),
+      );
+      return;
+    }
+    // Género: debe ser Macho, Hembra o Desconocido
+    if (
+      !formData.gender ||
+      !["Macho", "Hembra", "Desconocido"].includes(formData.gender)
+    ) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Sexo requerido",
+          desc: "El sexo es obligatorio y debe ser válido.",
+        }),
+      );
+      return;
+    }
+    // Fecha de nacimiento: no puede ser futura
+    if (formData.birthDate && new Date(formData.birthDate) > new Date()) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Fecha inválida",
+          desc: "La fecha de nacimiento no puede ser futura.",
+        }),
+      );
+      return;
+    }
+    // Cédula del propietario: 6-12 dígitos
+    if (!formData.ownerId || !/^\d{6,12}$/.test(formData.ownerId)) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Propietario requerido",
+          desc: "Debes seleccionar un propietario con cédula válida (6-12 dígitos).",
+        }),
+      );
+      return;
+    }
+    // Color: opcional, 2-50 caracteres
+    if (
+      formData.color &&
+      (formData.color.trim().length < 2 || formData.color.trim().length > 50)
+    ) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Color inválido",
+          desc: "El color debe tener entre 2 y 50 caracteres.",
+        }),
+      );
+      return;
+    }
+    // Alergias: opcional, max 500 caracteres
+    if (formData.allergies && formData.allergies.length > 500) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Alergias demasiado largas",
+          desc: "Las alergias no pueden exceder 500 caracteres.",
+        }),
+      );
+      return;
+    }
+    // Estado: debe ser Activo o Inactivo
+    if (formData.status && !["Activo", "Inactivo"].includes(formData.status)) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Estado inválido",
+          desc: "El estado debe ser Activo o Inactivo.",
+        }),
+      );
+      return;
+    }
+    // Fin validaciones
+
     dispatch(setIsLoading(true));
 
     try {
-      // Preparar datos para enviar (remover campos vacíos opcionales)
+      // Calcular la edad en años y meses
+      let calculatedAge = 0;
+      let ageLabel = "años";
+      if (formData.birthDate) {
+        const today = new Date();
+        const birth = new Date(formData.birthDate);
+        let years = today.getFullYear() - birth.getFullYear();
+        let months = today.getMonth() - birth.getMonth();
+        if (today.getDate() < birth.getDate()) {
+          months--;
+        }
+        if (months < 0) {
+          years--;
+          months += 12;
+        }
+        if (years < 2) {
+          calculatedAge = years * 12 + months;
+          ageLabel = "meses";
+        } else {
+          calculatedAge = years;
+          ageLabel = "años";
+        }
+      }
       const dataToSend = {
         name: formData.name,
         species: formData.species,
         breed: formData.breed,
-        age: formData.age,
+        age: calculatedAge,
         weight: formData.weight,
         gender: formData.gender,
-        ownerId: formData.ownerId,
+        cedula: formData.ownerId, // Ahora se envía como cedula
         status: formData.status,
-        ...(formData.birthDate && { birthDate: formData.birthDate }),
-        ...(formData.nextVisit && { nextVisit: formData.nextVisit }),
-        ...(formData.microchip && { microchip: formData.microchip }),
+        ...(formData.birthDate && { birthdate: formData.birthDate }),
         ...(formData.color && { color: formData.color }),
         ...(formData.allergies && { allergies: formData.allergies }),
+        ageLabel,
       };
 
       let res;
 
       if (patient) {
+        // Log de los datos que se enviarán al backend al actualizar paciente
+
         // Actualizar paciente existente (PUT)
         res = await axiosApi.put(`/patients/${patient.id}`, dataToSend);
         dispatch(
@@ -165,7 +372,7 @@ export function PatientDialog({
             type: "",
             text: "¡Actualización exitosa!",
             desc: res.data.message || "Paciente actualizado correctamente",
-          })
+          }),
         );
       } else {
         // Crear nuevo paciente (POST)
@@ -176,7 +383,7 @@ export function PatientDialog({
             type: "",
             text: "¡Registro exitoso!",
             desc: res.data.message || "Paciente creado correctamente",
-          })
+          }),
         );
       }
 
@@ -197,7 +404,7 @@ export function PatientDialog({
             error.response?.data?.message ||
             error.message ||
             "Error al guardar el paciente",
-        })
+        }),
       );
     } finally {
       dispatch(setIsLoading(false));
@@ -251,6 +458,7 @@ export function PatientDialog({
                         species: value as Patient["species"],
                       })
                     }
+                    disabled={!!patient}
                   >
                     <SelectTrigger id="species">
                       <SelectValue />
@@ -308,23 +516,34 @@ export function PatientDialog({
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="age">
-                    Edad (años) <span className="text-destructive">*</span>
-                  </Label>
+                  <Label htmlFor="age">Edad</Label>
                   <Input
                     id="age"
-                    type="number"
-                    min="0"
-                    max="50"
-                    step="0.1"
-                    value={formData.age}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        age: Number.parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    required
+                    type="text"
+                    value={(() => {
+                      // Usar birthDate de formData, si no, birthDate de patient
+                      const birthDateValue =
+                        formData.birthDate || (patient && patient.birthdate);
+                      if (!birthDateValue) return "";
+                      const today = new Date();
+                      const birth = new Date(birthDateValue);
+                      let years = today.getFullYear() - birth.getFullYear();
+                      let months = today.getMonth() - birth.getMonth();
+                      if (today.getDate() < birth.getDate()) {
+                        months--;
+                      }
+                      if (months < 0) {
+                        years--;
+                        months += 12;
+                      }
+                      if (years < 2) {
+                        return `${years * 12 + months} meses`;
+                      } else {
+                        return `${years} años`;
+                      }
+                    })()}
+                    readOnly
+                    placeholder="Calculado automáticamente"
                   />
                 </div>
                 <div className="grid gap-2">
@@ -334,16 +553,36 @@ export function PatientDialog({
                   <Input
                     id="weight"
                     type="number"
-                    min="0"
+                    min="0.1"
                     max="1000"
                     step="0.1"
-                    value={formData.weight}
-                    onChange={(e) =>
+                    value={formData.weight === 0 ? "" : formData.weight}
+                    onChange={(e) => {
+                      let value = e.target.value;
+                      // Permitir borrar el campo
+                      if (value === "") {
+                        setFormData({ ...formData, weight: 0 });
+                        return;
+                      }
+                      // Permitir coma o punto como separador decimal
+                      value = value.replace(",", ".");
+                      if (isNaN(Number(value))) {
+                        setFormData({ ...formData, weight: 0 });
+                        dispatch(
+                          setMessage({
+                            view: true,
+                            type: "Error",
+                            text: "Peso inválido",
+                            desc: "El peso debe ser un número válido.",
+                          }),
+                        );
+                        return;
+                      }
                       setFormData({
                         ...formData,
-                        weight: Number.parseFloat(e.target.value) || 0,
-                      })
-                    }
+                        weight: Number.parseFloat(value),
+                      });
+                    }}
                     required
                   />
                 </div>
@@ -356,36 +595,19 @@ export function PatientDialog({
                     onChange={(e) =>
                       setFormData({ ...formData, birthDate: e.target.value })
                     }
-                    max={new Date().toISOString().split("T")[0]}
+                    disabled={!!patient}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="color">Color</Label>
                   <Input
                     id="color"
+                    type="text"
                     value={formData.color}
                     onChange={(e) =>
                       setFormData({ ...formData, color: e.target.value })
                     }
                     placeholder="Café con blanco"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="microchip">Microchip</Label>
-                  <Input
-                    id="microchip"
-                    value={formData.microchip}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        microchip: e.target.value.toUpperCase(),
-                      })
-                    }
-                    placeholder="982000123456789"
-                    maxLength={20}
                   />
                 </div>
               </div>
@@ -398,41 +620,59 @@ export function PatientDialog({
               </h3>
               <div className="grid gap-2">
                 <Label htmlFor="ownerId">
-                  Seleccionar Propietario{" "}
-                  <span className="text-destructive">*</span>
+                  Propietario <span className="text-destructive">*</span>
                 </Label>
-                <Select
-                  value={formData.ownerId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, ownerId: value })
-                  }
-                  required
-                >
-                  <SelectTrigger id="ownerId">
-                    <SelectValue placeholder="Selecciona un propietario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.length === 0 ? (
-                      <SelectItem value="none" disabled>
-                        No hay clientes disponibles
-                      </SelectItem>
-                    ) : (
-                      clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.name} - {client.email}
+                {patient ? (
+                  <Input
+                    id="ownerId"
+                    value={formData.ownerId || "Sin propietario"}
+                    readOnly
+                    disabled
+                    className="bg-muted text-muted-foreground"
+                  />
+                ) : (
+                  <Select
+                    value={formData.ownerId}
+                    onValueChange={(value) => {
+                      const selectedClient = clients.find(
+                        (c) => c.cedula == value,
+                      );
+                      setFormData({
+                        ...formData,
+                        ownerId: selectedClient?.cedula || value,
+                      });
+                    }}
+                    required
+                  >
+                    <SelectTrigger id="ownerId">
+                      <SelectValue placeholder="Selecciona un propietario" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.filter(
+                        (c: any) => c.cedula && c.cedula.trim() !== "",
+                      ).length === 0 ? (
+                        <SelectItem value="none" disabled>
+                          No hay clientes con cédula disponible
                         </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                {formData.ownerId && (
-                  <p className="text-sm font-bold">
-                    Propietario seleccionado:
-                    <span className="text-[#053D58]">
-                      {" "}
-                      {clients.find((c) => c.id == formData.ownerId)?.name}
-                    </span>
-                  </p>
+                      ) : (
+                        clients
+                          .filter(
+                            (client) =>
+                              (client as any).cedula &&
+                              (client as any).cedula.trim() !== "",
+                          )
+                          .map((client) => (
+                            <SelectItem
+                              key={(client as any).cedula}
+                              value={(client as any).cedula}
+                            >
+                              {client.name} - {client.email} (
+                              {(client as any).cedula})
+                            </SelectItem>
+                          ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 )}
               </div>
             </div>
@@ -460,26 +700,6 @@ export function PatientDialog({
                 <p className="text-xs text-muted-foreground">
                   Máximo 500 caracteres
                 </p>
-              </div>
-            </div>
-
-            {/* Visitas */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground">
-                Control de Visitas
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="nextVisit">Próxima Visita</Label>
-                  <Input
-                    id="nextVisit"
-                    type="date"
-                    value={formData.nextVisit}
-                    onChange={(e) =>
-                      setFormData({ ...formData, nextVisit: e.target.value })
-                    }
-                  />
-                </div>
               </div>
             </div>
 

@@ -63,7 +63,7 @@ export default function ConfiguracionPage() {
               type: "Error",
               text: "Error de validación",
               desc: "Debes ingresar tu contraseña actual para cambiarla",
-            })
+            }),
           );
           dispatch(setIsLoading(false));
           return;
@@ -90,7 +90,7 @@ export default function ConfiguracionPage() {
             type: "",
             text: "¡Éxito!",
             desc: res.data.message || "Perfil actualizado correctamente",
-          })
+          }),
         );
 
         // Obtener perfil actualizado
@@ -105,7 +105,7 @@ export default function ConfiguracionPage() {
           setAuth({
             ...user,
             ...profileRes.data.data,
-          })
+          }),
         );
       } else {
         // Si NO se está cambiando la contraseña, usar ruta de users
@@ -125,7 +125,7 @@ export default function ConfiguracionPage() {
             type: "",
             text: "¡Éxito!",
             desc: res.data.message,
-          })
+          }),
         );
 
         // Actualizar el estado global con los nuevos datos
@@ -134,7 +134,7 @@ export default function ConfiguracionPage() {
           setAuth({
             ...user,
             ...updatedUser.data.data,
-          })
+          }),
         );
       }
 
@@ -147,13 +147,12 @@ export default function ConfiguracionPage() {
             headers: {
               Authorization: `Bearer ${currentToken}`,
             },
-          }
+          },
         );
 
         // Guardar el nuevo token en las cookies
         if (refreshRes.data.success && refreshRes.data.data.token) {
           await setAuthCookie(refreshRes.data.data.token);
-          console.log("Token renovado y guardado correctamente");
         }
       } catch (refreshError: any) {
         console.error("Error al renovar token:", refreshError);
@@ -175,7 +174,7 @@ export default function ConfiguracionPage() {
           type: "Error",
           text: error.response?.statusText || "Error",
           desc: error.response?.data?.message || error.message,
-        })
+        }),
       );
     } finally {
       dispatch(setIsLoading(false));
@@ -353,7 +352,7 @@ export default function ConfiguracionPage() {
                       <Label>Fecha de Creación</Label>
                       <Input
                         value={new Date(user.fecha_creacion).toLocaleDateString(
-                          "es-ES"
+                          "es-ES",
                         )}
                         disabled
                         className="bg-muted"
@@ -364,7 +363,7 @@ export default function ConfiguracionPage() {
                         <Label>Última Actualización</Label>
                         <Input
                           value={new Date(
-                            user.fecha_actualizacion
+                            user.fecha_actualizacion,
                           ).toLocaleDateString("es-ES")}
                           disabled
                           className="bg-muted"

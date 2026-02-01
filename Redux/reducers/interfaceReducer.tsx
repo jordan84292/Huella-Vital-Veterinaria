@@ -36,6 +36,7 @@ export interface interfaceReducer {
     phone: string;
     address: string;
     city: string;
+    cedula?: string;
     registrationDate: string;
     status: "Activo" | "Inactivo";
   }>;
@@ -47,7 +48,8 @@ export interface interfaceReducer {
     age: number;
     weight: number;
     gender: "Macho" | "Hembra";
-    birthDate?: string;
+    birthdate?: string;
+
     ownerName: string;
     ownerId: string;
     nextVisit?: string;
@@ -56,6 +58,7 @@ export interface interfaceReducer {
     color?: string;
     allergies?: string;
     status: "Activo" | "Inactivo";
+    cedula?: string;
     created_date?: string;
     updated_date?: string;
   }>;
@@ -141,7 +144,7 @@ export const interfaceReducer = createSlice({
         type: string;
         text: string;
         desc: string;
-      }>
+      }>,
     ) => {
       state.message = action.payload;
     },
@@ -166,7 +169,7 @@ export const interfaceReducer = createSlice({
     },
     updateUser: (
       state,
-      action: PayloadAction<interfaceReducer["users"][0]>
+      action: PayloadAction<interfaceReducer["users"][0]>,
     ) => {
       const index = state.users.findIndex((u) => u.id === action.payload.id);
       if (index !== -1) {
@@ -181,13 +184,13 @@ export const interfaceReducer = createSlice({
     },
     addClient: (
       state,
-      action: PayloadAction<interfaceReducer["clients"][0]>
+      action: PayloadAction<interfaceReducer["clients"][0]>,
     ) => {
       state.clients.push(action.payload);
     },
     updateClient: (
       state,
-      action: PayloadAction<interfaceReducer["clients"][0]>
+      action: PayloadAction<interfaceReducer["clients"][0]>,
     ) => {
       const index = state.clients.findIndex((c) => c.id === action.payload.id);
       if (index !== -1) {
@@ -199,19 +202,19 @@ export const interfaceReducer = createSlice({
     },
     setPatients: (
       state,
-      action: PayloadAction<interfaceReducer["patients"]>
+      action: PayloadAction<interfaceReducer["patients"]>,
     ) => {
       state.patients = action.payload;
     },
     addPatient: (
       state,
-      action: PayloadAction<interfaceReducer["patients"][0]>
+      action: PayloadAction<interfaceReducer["patients"][0]>,
     ) => {
       state.patients.push(action.payload);
     },
     updatePatient: (
       state,
-      action: PayloadAction<interfaceReducer["patients"][0]>
+      action: PayloadAction<interfaceReducer["patients"][0]>,
     ) => {
       const index = state.patients.findIndex((p) => p.id === action.payload.id);
       if (index !== -1) {
@@ -229,7 +232,7 @@ export const interfaceReducer = createSlice({
     },
     updateVisit: (
       state,
-      action: PayloadAction<interfaceReducer["visits"][0]>
+      action: PayloadAction<interfaceReducer["visits"][0]>,
     ) => {
       const index = state.visits.findIndex((v) => v.id === action.payload.id);
       if (index !== -1) {
@@ -241,22 +244,22 @@ export const interfaceReducer = createSlice({
     },
     setVaccinations: (
       state,
-      action: PayloadAction<interfaceReducer["vaccinations"]>
+      action: PayloadAction<interfaceReducer["vaccinations"]>,
     ) => {
       state.vaccinations = action.payload;
     },
     addVaccination: (
       state,
-      action: PayloadAction<interfaceReducer["vaccinations"][0]>
+      action: PayloadAction<interfaceReducer["vaccinations"][0]>,
     ) => {
       state.vaccinations.push(action.payload);
     },
     updateVaccination: (
       state,
-      action: PayloadAction<interfaceReducer["vaccinations"][0]>
+      action: PayloadAction<interfaceReducer["vaccinations"][0]>,
     ) => {
       const index = state.vaccinations.findIndex(
-        (v) => v.id === action.payload.id
+        (v) => v.id === action.payload.id,
       );
       if (index !== -1) {
         state.vaccinations[index] = action.payload;
@@ -264,27 +267,27 @@ export const interfaceReducer = createSlice({
     },
     deleteVaccination: (state, action: PayloadAction<string>) => {
       state.vaccinations = state.vaccinations.filter(
-        (v) => v.id !== action.payload
+        (v) => v.id !== action.payload,
       );
     },
     setAppointments: (
       state,
-      action: PayloadAction<interfaceReducer["appointments"]>
+      action: PayloadAction<interfaceReducer["appointments"]>,
     ) => {
       state.appointments = action.payload;
     },
     addAppointment: (
       state,
-      action: PayloadAction<interfaceReducer["appointments"][0]>
+      action: PayloadAction<interfaceReducer["appointments"][0]>,
     ) => {
       state.appointments.push(action.payload);
     },
     updateAppointment: (
       state,
-      action: PayloadAction<interfaceReducer["appointments"][0]>
+      action: PayloadAction<interfaceReducer["appointments"][0]>,
     ) => {
       const index = state.appointments.findIndex(
-        (a) => a.id === action.payload.id
+        (a) => a.id === action.payload.id,
       );
       if (index !== -1) {
         state.appointments[index] = action.payload;
@@ -292,7 +295,7 @@ export const interfaceReducer = createSlice({
     },
     deleteAppointment: (state, action: PayloadAction<string>) => {
       state.appointments = state.appointments.filter(
-        (a) => a.id !== action.payload
+        (a) => a.id !== action.payload,
       );
     },
   },

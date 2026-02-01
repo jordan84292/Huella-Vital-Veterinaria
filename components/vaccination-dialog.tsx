@@ -32,11 +32,8 @@ import { axiosApi } from "@/app/axiosApi/axiosApi";
 import { RootState } from "@/Redux/store";
 
 type Vaccination = {
-  date: string;
   vaccine: string;
-  nextDue: string;
   veterinarian: string;
-  batchNumber: string;
   notes?: string;
 };
 
@@ -56,30 +53,59 @@ export function VaccinationDialog({
   const users = useSelector((state: RootState) => state.interface.users);
 
   const [formData, setFormData] = useState<Vaccination>({
-    date: new Date().toISOString().split("T")[0],
     vaccine: "",
-    nextDue: "",
     veterinarian: "",
-    batchNumber: "",
     notes: "",
   });
 
-  // Calcular fecha de próxima dosis automáticamente (1 año después por defecto)
-  const handleDateChange = (date: string) => {
-    setFormData({ ...formData, date });
-    if (!formData.nextDue) {
-      const nextYear = new Date(date);
-      nextYear.setFullYear(nextYear.getFullYear() + 1);
-      setFormData({
-        ...formData,
-        date,
-        nextDue: nextYear.toISOString().split("T")[0],
-      });
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validaciones frontend
+    // Validaciones frontend según reglas del backend
+    // Vacuna
+    if (
+      !formData.vaccine.trim() ||
+      formData.vaccine.trim().length < 2 ||
+      formData.vaccine.trim().length > 100
+    ) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Vacuna requerida",
+          desc: "El nombre de la vacuna es obligatorio (2-100 caracteres).",
+        }),
+      );
+      return;
+    }
+    // Veterinario
+    if (
+      !formData.veterinarian ||
+      formData.veterinarian.trim().length < 2 ||
+      formData.veterinarian.trim().length > 150
+    ) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Veterinario requerido",
+          desc: "Debes seleccionar un veterinario válido (2-150 caracteres).",
+        }),
+      );
+      return;
+    }
+    // Notas
+    if (formData.notes && formData.notes.length > 500) {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Notas demasiado largas",
+          desc: "Las notas no pueden exceder 500 caracteres.",
+        }),
+      );
+      return;
+    }
     dispatch(setIsLoading(true));
 
     try {
@@ -95,22 +121,19 @@ export function VaccinationDialog({
           text: "Vacunación registrada",
           desc:
             res.data.message || "La vacunación se ha registrado correctamente",
-        })
+        }),
       );
 
       // Obtener vacunaciones del paciente
       const vaccinationsRes = await axiosApi.get(
-        `/vaccinations/patient/${patientId}`
+        `/vaccinations/patient/${patientId}`,
       );
       dispatch(setVaccinations(vaccinationsRes.data.data || []));
 
       // Resetear formulario
       setFormData({
-        date: new Date().toISOString().split("T")[0],
         vaccine: "",
-        nextDue: "",
         veterinarian: "",
-        batchNumber: "",
         notes: "",
       });
 
@@ -122,7 +145,7 @@ export function VaccinationDialog({
           type: "Error",
           text: "Error al registrar vacunación",
           desc: error.response?.data?.message || error.message,
-        })
+        }),
       );
     } finally {
       dispatch(setIsLoading(false));
@@ -143,10 +166,18 @@ export function VaccinationDialog({
     }
   }, [open, users.length, dispatch]);
 
-  // Filtrar solo veterinarios activos
-  const veterinarians = users.filter(
-    (u) => u.rolName === "Veterinario" && u.status === "Activo"
-  );
+  // Filtrar solo veterinarios (rol === "2")
+  // Tipos extendidos para usuarios con cedula
+  type User = {
+    id: string;
+    nombre: string;
+    email: string;
+    rolName: string;
+    status: string;
+    telefono: string;
+    cedula?: string;
+  };
+  const veterinarians = users.filter((u: User) => u.rolName === "Veterinario");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -171,72 +202,35 @@ export function VaccinationDialog({
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="date">Fecha de Aplicación *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => handleDateChange(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="nextDue">Próxima Dosis *</Label>
-              <Input
-                id="nextDue"
-                type="date"
-                value={formData.nextDue}
-                onChange={(e) =>
-                  setFormData({ ...formData, nextDue: e.target.value })
-                }
-                min={formData.date}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="veterinarian">Veterinario *</Label>
-              <Select
-                value={formData.veterinarian}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, veterinarian: value })
-                }
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un veterinario" />
-                </SelectTrigger>
-                <SelectContent>
-                  {veterinarians.length > 0 ? (
-                    veterinarians.map((vet) => (
-                      <SelectItem key={vet.id} value={vet.nombre}>
-                        Dr(a). {vet.nombre}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="no-vets" disabled>
-                      No hay veterinarios disponibles
+          <div className="space-y-2">
+            <Label htmlFor="veterinarian">Veterinario *</Label>
+            <Select
+              value={formData.veterinarian}
+              onValueChange={(value) =>
+                setFormData({ ...formData, veterinarian: value })
+              }
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un veterinario" />
+              </SelectTrigger>
+              <SelectContent>
+                {veterinarians.length > 0 ? (
+                  veterinarians.map((vet) => (
+                    <SelectItem key={vet.id} value={vet.nombre}>
+                      Dr(a). {vet.nombre}
+                      {"cedula" in vet && vet.cedula
+                        ? ` - Cédula: ${vet.cedula}`
+                        : ""}
                     </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="batchNumber">Número de Lote *</Label>
-              <Input
-                id="batchNumber"
-                value={formData.batchNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, batchNumber: e.target.value })
-                }
-                placeholder="VAC2024-09-001"
-                required
-              />
-            </div>
+                  ))
+                ) : (
+                  <SelectItem value="no-vets" disabled>
+                    No hay veterinarios disponibles
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

@@ -57,9 +57,17 @@ type User = {
   id: string;
   nombre: string;
   email: string;
-  rolName: string;
+  rol: string; // código de rol
   status: "Activo" | "Inactivo";
   telefono: string;
+};
+
+// Mapeo de códigos de rol a nombres legibles
+const ROLES: Record<string, string> = {
+  "1": "Administrador",
+  "2": "Veterinario",
+  "3": "Recepcionista",
+  "4": "Asistente",
 };
 
 export default function UsuariosPage() {
@@ -88,8 +96,8 @@ export default function UsuariosPage() {
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.telefono.includes(searchQuery);
 
-    // Filtro por rol
-    const matchesRol = rolFilter === "todos" || user.rolName === rolFilter;
+    // Filtro por rol (usa el código de rol)
+    const matchesRol = rolFilter === "todos" || user.rol === rolFilter;
 
     // Filtro por estado
     const matchesStatus =
@@ -128,7 +136,7 @@ export default function UsuariosPage() {
           type: "Error",
           text: "Acción no permitida",
           desc: "No puedes eliminar tu propia cuenta de usuario",
-        })
+        }),
       );
       return;
     }
@@ -144,7 +152,7 @@ export default function UsuariosPage() {
             type: "",
             text: "Success!!",
             desc: res.data.message,
-          })
+          }),
         );
 
         const refresh = await axiosApi.get("/Users");
@@ -156,7 +164,7 @@ export default function UsuariosPage() {
             type: "Error",
             text: error.response.statusText,
             desc: error.response.data.message,
-          })
+          }),
         );
       } finally {
         dispatch(setIsLoading(false));
@@ -165,15 +173,15 @@ export default function UsuariosPage() {
     sendData();
   };
 
-  const getRoleBadgeVariant = (role: User["rolName"]) => {
+  const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case "Veterinario":
+      case "2": // Veterinario
         return "default";
-      case "Administrador":
+      case "1": // Administrador
         return "secondary";
-      case "Asistente":
+      case "4": // Asistente
         return "outline";
-      case "Recepcionista":
+      case "3": // Recepcionista
         return "outline";
       default:
         return "outline";
@@ -310,8 +318,8 @@ export default function UsuariosPage() {
                           {user.telefono}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getRoleBadgeVariant(user.rolName)}>
-                            {user.rolName}
+                          <Badge variant={getRoleBadgeVariant(user.rol)}>
+                            {ROLES[user.rol] || user.rol}
                           </Badge>
                         </TableCell>
                         <TableCell>

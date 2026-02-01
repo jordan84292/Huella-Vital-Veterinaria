@@ -68,16 +68,72 @@ type Appointment = {
 };
 
 export default function CitasPage() {
+  const dispatch = useDispatch();
+  // Cargar pacientes y clientes al montar la página si están vacíos
+  const patients = useSelector((state: RootState) => state.interface.patients);
+  const clients = useSelector((state: RootState) => state.interface.clients);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        if (patients.length === 0) {
+          const resPatients = await axiosApi.get("/patients");
+
+          dispatch(
+            require("@/Redux/reducers/interfaceReducer").setPatients(
+              resPatients.data.data,
+            ),
+          );
+        }
+        if (clients.length === 0) {
+          const resClients = await axiosApi.get("/clients");
+          dispatch(
+            require("@/Redux/reducers/interfaceReducer").setClients(
+              resClients.data.data,
+            ),
+          );
+        }
+      } catch (error) {
+        console.error("Error cargando pacientes/clientes en citas:", error);
+      }
+    };
+    loadData();
+  }, [patients.length, clients.length, dispatch]);
+  // (Eliminado: declaración duplicada)
   const appointments = useSelector(
-    (state: RootState) => state.interface.appointments
+    (state: RootState) => state.interface.appointments,
   );
+
+  // Mapear para agregar patientName y ownerName si no existen
+  const mappedAppointments = appointments.map((apt) => {
+    // Usar patientid (minúscula) para buscar el paciente
+    const patientId = apt.patientId || apt.patientid;
+    let patientName = apt.patientName;
+    let ownerName = apt.ownerName;
+    if (!patientName || !ownerName) {
+      const patient = patients.find((p) => String(p.id) === String(patientId));
+      if (patient) {
+        patientName = patient.name;
+        // Buscar propietario usando la cédula del paciente
+        const owner = clients.find(
+          (c) => String(c.cedula) === String(patient.cedula),
+        );
+        ownerName = owner?.name || "";
+      }
+    }
+    return {
+      ...apt,
+      patientName: patientName || "",
+      ownerName: ownerName || "",
+    };
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("todos");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
-  const dispatch = useDispatch();
 
   useEffect(() => {
     const getAppointments = async () => {
@@ -92,7 +148,7 @@ export default function CitasPage() {
             type: "Error",
             text: "Error al cargar citas",
             desc: error.response?.data?.message || error.message,
-          })
+          }),
         );
       } finally {
         dispatch(setIsLoading(false));
@@ -102,7 +158,7 @@ export default function CitasPage() {
   }, [dispatch]);
 
   // Función de filtrado
-  const filteredAppointments = appointments.filter((appointment) => {
+  const filteredAppointments = mappedAppointments.filter((appointment) => {
     const matchesSearch =
       appointment.patientName
         ?.toLowerCase()
@@ -157,7 +213,7 @@ export default function CitasPage() {
             type: "",
             text: "Success!!",
             desc: res.data.message,
-          })
+          }),
         );
 
         const refresh = await axiosApi.get("/appointments");
@@ -169,7 +225,7 @@ export default function CitasPage() {
             type: "Error",
             text: error.response?.statusText || "Error",
             desc: error.response?.data?.message || error.message,
-          })
+          }),
         );
       } finally {
         dispatch(setIsLoading(false));
@@ -202,14 +258,14 @@ export default function CitasPage() {
 
   // Cálculo de estadísticas
   const totalProgramadas = appointments.filter(
-    (a) => a.status === "Programada"
+    (a) => a.status === "Programada",
   ).length;
   const totalCompletadas = appointments.filter(
-    (a) => a.status === "Completada"
+    (a) => a.status === "Completada",
   ).length;
   const today = helpGetDate();
   const totalHoy = appointments.filter(
-    (a) => a.date.split("T")[0] == today
+    (a) => a.date.split("T")[0] == today,
   ).length;
 
   return (
@@ -355,13 +411,13 @@ export default function CitasPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="min-w-[100px]">Fecha</TableHead>
-                    <TableHead className="min-w-[80px]">Hora</TableHead>
+                    <TableHead className="min-w-20">Hora</TableHead>
                     <TableHead className="min-w-[120px]">Paciente</TableHead>
                     <TableHead className="min-w-[140px]">Propietario</TableHead>
                     <TableHead className="min-w-[100px]">Tipo</TableHead>
                     <TableHead className="min-w-[140px]">Veterinario</TableHead>
                     <TableHead className="min-w-[100px]">Estado</TableHead>
-                    <TableHead className="text-right min-w-[80px]">
+                    <TableHead className="text-right min-w-20">
                       Acciones
                     </TableHead>
                   </TableRow>
@@ -372,7 +428,7 @@ export default function CitasPage() {
                       <TableRow key={appointment.id}>
                         <TableCell className="font-medium">
                           {new Date(appointment.date).toLocaleDateString(
-                            "es-ES"
+                            "es-ES",
                           )}
                         </TableCell>
                         <TableCell className="font-medium">

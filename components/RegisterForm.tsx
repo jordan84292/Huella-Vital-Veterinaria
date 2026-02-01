@@ -106,7 +106,7 @@ export const RegisterForm = ({ setIsLogin }: RegisterProps) => {
   // Validar confirmación de contraseña
   const validateConfirmPassword = (
     confirm: string,
-    newPass: string
+    newPass: string,
   ): boolean => {
     if (!confirm) {
       setErrors((prev) => ({
@@ -151,7 +151,7 @@ export const RegisterForm = ({ setIsLogin }: RegisterProps) => {
     const isNewValid = validateNewPassword(newPassword);
     const isConfirmValid = validateConfirmPassword(
       confirmPassword,
-      newPassword
+      newPassword,
     );
 
     if (!isEmailValid || !isCurrentValid || !isNewValid || !isConfirmValid) {
@@ -162,7 +162,7 @@ export const RegisterForm = ({ setIsLogin }: RegisterProps) => {
 
     try {
       // PASO 1: Login para verificar credenciales y obtener token
-      console.log("Verificando credenciales...");
+
       const loginResponse = await axiosApi.post("/auth/login", {
         email: email,
         password: currentPassword,
@@ -173,7 +173,6 @@ export const RegisterForm = ({ setIsLogin }: RegisterProps) => {
       }
 
       const { token, user } = loginResponse.data.data;
-      console.log("Login exitoso, usuario:", user);
 
       // Mostrar mensaje de verificación
       dispatch(
@@ -182,11 +181,10 @@ export const RegisterForm = ({ setIsLogin }: RegisterProps) => {
           type: "",
           text: "Credenciales verificadas",
           desc: `Hola ${user.nombre}, actualizando tu contraseña...`,
-        })
+        }),
       );
 
       // PASO 2: Actualizar contraseña usando el endpoint de auth/profile
-      console.log("Actualizando contraseña...");
 
       const updateResponse = await axiosApi.put(
         "/auth/profile",
@@ -201,10 +199,8 @@ export const RegisterForm = ({ setIsLogin }: RegisterProps) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
-
-      console.log("Respuesta de actualización:", updateResponse.data);
 
       if (updateResponse.data.success) {
         dispatch(
@@ -213,7 +209,7 @@ export const RegisterForm = ({ setIsLogin }: RegisterProps) => {
             type: "",
             text: "¡Contraseña actualizada!",
             desc: "Tu contraseña ha sido cambiada correctamente. Redirigiendo al login...",
-          })
+          }),
         );
 
         // Limpiar formulario
@@ -234,7 +230,7 @@ export const RegisterForm = ({ setIsLogin }: RegisterProps) => {
         }, 3000);
       } else {
         throw new Error(
-          updateResponse.data.message || "Error al actualizar la contraseña"
+          updateResponse.data.message || "Error al actualizar la contraseña",
         );
       }
     } catch (error: any) {
@@ -259,7 +255,7 @@ export const RegisterForm = ({ setIsLogin }: RegisterProps) => {
           type: "Error",
           text: "Error al cambiar contraseña",
           desc: errorMessage,
-        })
+        }),
       );
     } finally {
       dispatch(setIsLoading(false));

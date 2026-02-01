@@ -45,7 +45,8 @@ type Client = {
   phone: string;
   address: string;
   city: string;
-  registrationDate: string;
+  registrationDate?: string;
+  registrationdate?: string;
   status: "Activo" | "Inactivo";
 };
 
@@ -60,7 +61,7 @@ export default function ClientesPage() {
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.phone.includes(searchQuery) ||
-      client.city.toLowerCase().includes(searchQuery.toLowerCase())
+      client.city.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   useEffect(() => {
@@ -93,7 +94,7 @@ export default function ClientesPage() {
             type: "",
             text: "Success!!",
             desc: res.data.message,
-          })
+          }),
         );
 
         const refresh = await axiosApi.get("/clients");
@@ -105,7 +106,7 @@ export default function ClientesPage() {
             type: "Error",
             text: error.response.statusText,
             desc: error.response.data.message,
-          })
+          }),
         );
       }
     };
@@ -210,9 +211,15 @@ export default function ClientesPage() {
                       </TableCell>
 
                       <TableCell className="text-muted-foreground">
-                        {new Date(client.registrationDate).toLocaleDateString(
-                          "es-ES"
-                        )}
+                        {(() => {
+                          const fecha =
+                            client.registrationdate || client.registrationDate;
+                          if (!fecha) return "-";
+                          const d = new Date(fecha);
+                          return isNaN(d.getTime())
+                            ? "-"
+                            : d.toLocaleDateString("es-ES");
+                        })()}
                       </TableCell>
                       <TableCell>
                         <Badge

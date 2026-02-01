@@ -68,9 +68,8 @@ export default function DashboardPage() {
         const today = helpGetDate(); // Formato: YYYY-MM-DD
 
         const appointmentsToday = await axiosApi.get(
-          `/appointments/date/${today}`
+          `/appointments/date/${today}`,
         );
-        console.log(appointmentsToday);
 
         // Actualizar estadísticas
         setStats({
@@ -81,7 +80,10 @@ export default function DashboardPage() {
         });
 
         // Formatear y ordenar citas de hoy
-        const formattedAppointments = appointmentsToday.data.data
+        const appointmentsArray = Array.isArray(appointmentsToday.data?.data)
+          ? appointmentsToday.data.data
+          : [];
+        const formattedAppointments = appointmentsArray
           .map((apt: any) => ({
             patientId: apt.patientId,
             time: apt.time,
@@ -104,7 +106,7 @@ export default function DashboardPage() {
             type: "Error",
             text: "Error al cargar dashboard",
             desc: error.response?.data?.message || error.message,
-          })
+          }),
         );
       } finally {
         dispatch(setIsLoading(false));
