@@ -107,7 +107,7 @@ export default function CitasPage() {
   // Mapear para agregar patientName y ownerName si no existen
   const mappedAppointments = appointments.map((apt) => {
     // Usar patientid (minúscula) para buscar el paciente
-    const patientId = apt.patientId || apt.patientid;
+    const patientId = apt.patientId;
     let patientName = apt.patientName;
     let ownerName = apt.ownerName;
     if (!patientName || !ownerName) {
