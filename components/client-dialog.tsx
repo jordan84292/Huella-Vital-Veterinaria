@@ -35,7 +35,7 @@ type Client = {
   phone: string;
   address: string;
   city: string;
-  registrationDate: string;
+  registrationdate: string;
   status: "Activo" | "Inactivo";
 };
 
@@ -45,7 +45,7 @@ type ClientDialogProps = {
   client: Client | null;
 };
 const initialForm = {
-  id: undefined,
+  id: undefined as string | undefined,
   name: "",
   email: "",
   phone: "",
@@ -64,7 +64,7 @@ export function ClientDialog({
   useEffect(() => {
     if (client) {
       setFormData({
-        id: client.id ?? client.cedula ?? "",
+        id: client.id ?? "",
         name: client.name,
         email: client.email,
         phone: client.phone,

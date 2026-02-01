@@ -33,7 +33,7 @@ type User = {
   id: string;
   nombre: string;
   email: string;
-  rolName: string;
+  rol: string;
   status: "Activo" | "Inactivo";
   telefono: string;
 };
@@ -48,7 +48,7 @@ const initialForm: User = {
   nombre: "",
   email: "",
   telefono: "",
-  rolName: "4",
+  rol: "4",
   status: "Activo",
 };
 export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
@@ -58,7 +58,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     nombre: "",
     email: "",
     telefono: "",
-    rolName: "Asistente" as User["rolName"],
+    rol: "Asistente" as User["rol"],
     status: "Activo" as User["status"],
   });
 
@@ -69,7 +69,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         nombre: user.nombre,
         email: user.email,
         telefono: user.telefono,
-        rolName: user.rolName,
+        rol: user.rol,
         status: user.status,
       });
     } else {
@@ -96,7 +96,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
             type: "",
             text: "Success!!",
             desc: res.data.message,
-          })
+          }),
         );
 
         const refresh = await axiosApi.get("/Users");
@@ -111,7 +111,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
             type: "Error",
             text: error.response.statusText,
             desc: error.response.data.message,
-          })
+          }),
         );
       }
     };
@@ -174,11 +174,11 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
             <div className="grid gap-2">
               <Label htmlFor="role">Rol</Label>
               <Select
-                value={formData.rolName}
+                value={formData.rol}
                 onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    rolName: value as User["rolName"],
+                    rol: value as User["rol"],
                   })
                 }
               >

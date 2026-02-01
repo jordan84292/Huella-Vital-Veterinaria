@@ -25,7 +25,7 @@ export interface interfaceReducer {
     id: string;
     nombre: string;
     email: string;
-    rol: number;
+    rol: string;
     status: "Activo" | "Inactivo";
     telefono: string;
   }>;
@@ -37,7 +37,7 @@ export interface interfaceReducer {
     address: string;
     city: string;
     cedula?: string;
-    registrationDate: string;
+    registrationdate: string;
     status: "Activo" | "Inactivo";
   }>;
   patients: Array<{

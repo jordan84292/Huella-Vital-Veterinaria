@@ -58,6 +58,7 @@ type User = {
   nombre: string;
   email: string;
   rol: string; // código de rol
+
   status: "Activo" | "Inactivo";
   telefono: string;
 };
@@ -68,6 +69,7 @@ const ROLES: Record<string, string> = {
   "2": "Veterinario",
   "3": "Recepcionista",
   "4": "Asistente",
+  "5": "Cliente", // Agregar rol Cliente
 };
 
 export default function UsuariosPage() {
@@ -123,11 +125,24 @@ export default function UsuariosPage() {
   };
 
   const handleEditUser = (user: User) => {
+    // No permitir editar usuarios con rol Cliente (5)
+    if (user.rol === "5") {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Acción no permitida",
+          desc: "Los usuarios tipo Cliente no se pueden editar desde aquí. Edítalos desde la sección de Clientes.",
+        }),
+      );
+      return;
+    }
+
     setSelectedUser(user);
     setDialogOpen(true);
   };
 
-  const handleDeleteUser = (id: string) => {
+  const handleDeleteUser = (id: string, userRole?: string) => {
     // Verificar si el usuario está intentando eliminarse a sí mismo
     if (currentUser && currentUser.id === id) {
       dispatch(
@@ -136,6 +151,19 @@ export default function UsuariosPage() {
           type: "Error",
           text: "Acción no permitida",
           desc: "No puedes eliminar tu propia cuenta de usuario",
+        }),
+      );
+      return;
+    }
+
+    // No permitir eliminar usuarios con rol Cliente (5)
+    if (userRole === "5") {
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Acción no permitida",
+          desc: "Los usuarios tipo Cliente no se pueden eliminar desde aquí. Elimínalos desde la sección de Clientes.",
         }),
       );
       return;
@@ -183,6 +211,8 @@ export default function UsuariosPage() {
         return "outline";
       case "3": // Recepcionista
         return "outline";
+      case "5": // Cliente
+        return "destructive"; // Usar un color diferente para clientes
       default:
         return "outline";
     }
@@ -248,6 +278,7 @@ export default function UsuariosPage() {
                     <SelectItem value="1">Administrador</SelectItem>
                     <SelectItem value="4">Asistente</SelectItem>
                     <SelectItem value="3">Recepcionista</SelectItem>
+                    <SelectItem value="5">Cliente</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -341,19 +372,28 @@ export default function UsuariosPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 onClick={() => handleEditUser(user)}
+                                disabled={user.rol === "5"}
                               >
                                 <Pencil className="mr-2 h-4 w-4" />
-                                Editar
+                                {user.rol === "5"
+                                  ? "Cliente - No editable"
+                                  : "Editar"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleDeleteUser(user.id)}
+                                onClick={() =>
+                                  handleDeleteUser(user.id, user.rol)
+                                }
                                 className="text-destructive"
-                                disabled={isCurrentUser(user.id)}
+                                disabled={
+                                  isCurrentUser(user.id) || user.rol === "5"
+                                }
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 {isCurrentUser(user.id)
                                   ? "No puedes eliminarte"
-                                  : "Eliminar"}
+                                  : user.rol === "5"
+                                    ? "Cliente - No editable"
+                                    : "Eliminar"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

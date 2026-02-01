@@ -40,12 +40,13 @@ import {
 
 type Client = {
   id: string;
+  cedula?: string; // Añadir cedula que es lo que se usa como ID real
   name: string;
   email: string;
   phone: string;
   address: string;
   city: string;
-  registrationDate: string;
+  registrationdate: string; // Cambiar a lowercase para coincidir con la API
   status: "Activo" | "Inactivo";
 };
 
@@ -81,11 +82,14 @@ export default function ClientesPage() {
     setDialogOpen(true);
   };
 
-  const handleDeleteClient = (id: string) => {
+  const handleDeleteClient = (client: Client) => {
+    // Usar cedula como ID para la eliminación
+    const clientId = client.cedula || client.id;
+
     dispatch(setIsLoading(true));
     const sendData = async () => {
       try {
-        const res = await axiosApi.delete(`clients/${id}`);
+        const res = await axiosApi.delete(`/clients/${clientId}`);
 
         dispatch(
           setMessage({
@@ -211,7 +215,7 @@ export default function ClientesPage() {
 
                       <TableCell className="text-muted-foreground">
                         {(() => {
-                          const fecha = client.registrationDate;
+                          const fecha = client.registrationdate;
                           if (!fecha) return "-";
                           const d = new Date(fecha);
                           return isNaN(d.getTime())
@@ -243,7 +247,7 @@ export default function ClientesPage() {
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleDeleteClient(client.id)}
+                              onClick={() => handleDeleteClient(client)}
                               className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
