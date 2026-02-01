@@ -27,6 +27,7 @@ import {
 } from "@/Redux/reducers/interfaceReducer";
 import { axiosApi } from "@/app/axiosApi/axiosApi";
 import { useDispatch } from "react-redux";
+import { validateClient } from "@/lib/validations";
 
 type Client = {
   id: string;
@@ -61,6 +62,9 @@ export function ClientDialog({
   client,
 }: ClientDialogProps) {
   const [formData, setFormData] = useState(initialForm);
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
   const dispatch = useDispatch();
   useEffect(() => {
     if (client) {
@@ -76,10 +80,39 @@ export function ClientDialog({
     } else {
       setFormData(initialForm);
     }
+    // Limpiar errores de validación cuando se abre el diálogo
+    setValidationErrors({});
   }, [client, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar datos en el frontend antes de enviar
+    const validation = validateClient({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      city: formData.city,
+      cedula: formData.id,
+      status: formData.status,
+    });
+
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
+      dispatch(
+        setMessage({
+          view: true,
+          type: "Error",
+          text: "Errores de validación",
+          desc: "Por favor corrige los errores en el formulario antes de continuar",
+        }),
+      );
+      return;
+    }
+
+    // Limpiar errores si la validación es exitosa
+    setValidationErrors({});
 
     dispatch(setIsLoading(true));
     const sendData = async () => {
@@ -180,8 +213,14 @@ export function ClientDialog({
                     setFormData({ ...formData, id: e.target.value })
                   }
                   placeholder="Cedula"
+                  className={validationErrors.cedula ? "border-red-500" : ""}
                   required
                 />
+                {validationErrors.cedula && (
+                  <p className="text-sm text-red-500">
+                    {validationErrors.cedula}
+                  </p>
+                )}
               </div>
             )}
             <div className="grid  gap-2">
@@ -193,8 +232,12 @@ export function ClientDialog({
                   setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="María González"
+                className={validationErrors.name ? "border-red-500" : ""}
                 required
               />
+              {validationErrors.name && (
+                <p className="text-sm text-red-500">{validationErrors.name}</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
@@ -207,8 +250,14 @@ export function ClientDialog({
                     setFormData({ ...formData, email: e.target.value })
                   }
                   placeholder="maria@email.com"
+                  className={validationErrors.email ? "border-red-500" : ""}
                   required
                 />
+                {validationErrors.email && (
+                  <p className="text-sm text-red-500">
+                    {validationErrors.email}
+                  </p>
+                )}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="phone">Teléfono</Label>
@@ -220,8 +269,14 @@ export function ClientDialog({
                     setFormData({ ...formData, phone: e.target.value })
                   }
                   placeholder="+34 612 345 678"
+                  className={validationErrors.phone ? "border-red-500" : ""}
                   required
                 />
+                {validationErrors.phone && (
+                  <p className="text-sm text-red-500">
+                    {validationErrors.phone}
+                  </p>
+                )}
               </div>
             </div>
             <div className="grid gap-2">
@@ -233,8 +288,14 @@ export function ClientDialog({
                   setFormData({ ...formData, address: e.target.value })
                 }
                 placeholder="Calle Mayor 123"
+                className={validationErrors.address ? "border-red-500" : ""}
                 required
               />
+              {validationErrors.address && (
+                <p className="text-sm text-red-500">
+                  {validationErrors.address}
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
@@ -246,8 +307,14 @@ export function ClientDialog({
                     setFormData({ ...formData, city: e.target.value })
                   }
                   placeholder="Madrid"
+                  className={validationErrors.city ? "border-red-500" : ""}
                   required
                 />
+                {validationErrors.city && (
+                  <p className="text-sm text-red-500">
+                    {validationErrors.city}
+                  </p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -262,7 +329,10 @@ export function ClientDialog({
                     })
                   }
                 >
-                  <SelectTrigger id="status">
+                  <SelectTrigger
+                    id="status"
+                    className={validationErrors.status ? "border-red-500" : ""}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -270,6 +340,11 @@ export function ClientDialog({
                     <SelectItem value="Inactivo">Inactivo</SelectItem>
                   </SelectContent>
                 </Select>
+                {validationErrors.status && (
+                  <p className="text-sm text-red-500">
+                    {validationErrors.status}
+                  </p>
+                )}
               </div>
             </div>
           </div>

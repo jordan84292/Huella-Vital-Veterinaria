@@ -28,6 +28,7 @@ import {
   setMessage,
   setUsers,
 } from "@/Redux/reducers/interfaceReducer";
+import { validateUser } from "@/lib/validations";
 
 type User = {
   id: string;
@@ -61,6 +62,9 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     rol: "Asistente" as User["rol"],
     status: "Activo" as User["status"],
   });
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     if (user) {
