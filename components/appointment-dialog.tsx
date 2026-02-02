@@ -301,13 +301,24 @@ export function AppointmentDialog({
     dispatch(setIsLoading(true));
 
     try {
+      // Asegurar que la fecha esté en formato YYYY-MM-DD sin zona horaria
+      const appointmentData = {
+        ...formData,
+        date: formData.date, // Ya está en formato YYYY-MM-DD del input type="date"
+      };
+
+      console.log("Datos de cita a enviar:", appointmentData);
+
       let res;
       if (appointment) {
         // Actualizar cita existente
-        res = await axiosApi.put(`/appointments/${appointment.id}`, formData);
+        res = await axiosApi.put(
+          `/appointments/${appointment.id}`,
+          appointmentData,
+        );
       } else {
         // Crear nueva cita
-        res = await axiosApi.post("/appointments", formData);
+        res = await axiosApi.post("/appointments", appointmentData);
       }
 
       // Si el backend devuelve error, mostrarlo
