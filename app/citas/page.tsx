@@ -427,9 +427,18 @@ export default function CitasPage() {
                     filteredAppointments.map((appointment) => (
                       <TableRow key={appointment.id}>
                         <TableCell className="font-medium">
-                          {new Date(appointment.date).toLocaleDateString(
-                            "es-ES",
-                          )}
+                          {(() => {
+                            // Evitar conversión de zona horaria
+                            const [year, month, day] = appointment.date
+                              .split("T")[0]
+                              .split("-");
+                            const date = new Date(
+                              parseInt(year),
+                              parseInt(month) - 1,
+                              parseInt(day),
+                            );
+                            return date.toLocaleDateString("es-ES");
+                          })()}
                         </TableCell>
                         <TableCell className="font-medium">
                           {appointment.time}
