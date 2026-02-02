@@ -358,8 +358,11 @@ export function AppointmentDialog({
   // Filtrar solo pacientes activos
   const activePatients = patients.filter((p) => p.status === "Activo");
 
-  // Filtrar solo veterinarios (rol === "2")
-  const veterinarians = users.filter((u) => u.rolName === "Veterinario");
+  // Filtrar solo veterinarios (rol === "2" o rol === 2)
+  const veterinarians = users.filter((u) => String(u.rol) === "2");
+  console.log("Total usuarios:", users.length);
+  console.log("Veterinarios encontrados:", veterinarians.length);
+  console.log("Veterinarios:", veterinarians);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
