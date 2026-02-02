@@ -112,18 +112,33 @@ export function AppointmentDialog({
   }, [open, patients.length, clients.length, users.length, dispatch]);
 
   useEffect(() => {
+    // Limpiar error cuando se abre/cierra el diálogo
+    setBackendError("");
+
     if (appointment) {
+      // Asegurar que la hora esté en formato HH:MM
+      let timeValue = appointment.time || "";
+      console.log("Hora original del appointment:", appointment.time); // Debug
+      // Si la hora viene sin formato correcto, intentar arreglarlo
+      if (timeValue && !timeValue.includes(":")) {
+        // Si viene en formato HHMM, convertir a HH:MM
+        if (timeValue.length === 4) {
+          timeValue = `${timeValue.slice(0, 2)}:${timeValue.slice(2)}`;
+        }
+      }
+      console.log("Hora después de formatear:", timeValue); // Debug
+
       setFormData({
-        patientId: appointment.patientId,
+        patientId: String(appointment.patientId), // Asegurar que sea string
         date: appointment.date,
-        time: appointment.time,
+        time: timeValue,
         type: appointment.type,
         veterinarian: appointment.veterinarian,
         status: appointment.status,
         notes: appointment.notes || "",
       });
 
-      // Debug: mostrar cómo se busca el paciente y propietario
+      // Buscar el paciente y propietario cuando hay datos de appointment
       const patient = patients.find(
         (p: any) => String(p.id) === String(appointment.patientId),
       );
@@ -143,7 +158,7 @@ export function AppointmentDialog({
     } else {
       setFormData({
         patientId: "",
-        date: "",
+        date: todayStr,
         time: "",
         type: "Consulta",
         veterinarian: "",
@@ -153,7 +168,7 @@ export function AppointmentDialog({
       setSelectedPatientName("");
       setOwnerName("");
     }
-  }, [appointment, open, patients]);
+  }, [appointment, open, patients, clients, todayStr]);
 
   // Manejar cambio de paciente
   const handlePatientChange = (patientId: string) => {
@@ -185,6 +200,9 @@ export function AppointmentDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBackendError("");
+
+    console.log("formData en handleSubmit:", formData); // Debug
+
     // Validaciones frontend según reglas del backend
     // Paciente
     if (
@@ -219,17 +237,15 @@ export function AppointmentDialog({
       return;
     }
     // Hora
-    if (
-      !formData.time ||
-      !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(formData.time)
-    ) {
-      setBackendError("La hora es requerida y debe estar en formato HH:MM.");
+    if (!formData.time || formData.time.trim() === "") {
+      console.log("Error de validación - Time:", formData.time); // Debug
+      setBackendError("La hora es requerida.");
       dispatch(
         setMessage({
           view: true,
           type: "Error",
-          text: "Hora inválida",
-          desc: "La hora es requerida y debe estar en formato HH:MM.",
+          text: "Hora requerida",
+          desc: "Debe proporcionar una hora para la cita.",
         }),
       );
       return;
@@ -458,9 +474,10 @@ export function AppointmentDialog({
                 id="time"
                 type="time"
                 value={formData.time}
-                onChange={(e) =>
-                  setFormData({ ...formData, time: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, time: e.target.value });
+                  setBackendError(""); // Limpiar error al cambiar
+                }}
                 required
               />
             </div>
@@ -523,13 +540,18 @@ export function AppointmentDialog({
               onValueChange={(value: any) =>
                 setFormData({ ...formData, status: value })
               }
+              disabled={appointment?.status === "Completada"}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Programada">Programada</SelectItem>
-                <SelectItem value="Completada">Completada</SelectItem>
+                {appointment?.status === "Completada" && (
+                  <SelectItem value="Completada" disabled>
+                    Completada (solo desde atención)
+                  </SelectItem>
+                )}
                 <SelectItem value="Cancelada">Cancelada</SelectItem>
               </SelectContent>
             </Select>

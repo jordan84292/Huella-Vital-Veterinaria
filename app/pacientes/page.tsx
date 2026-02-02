@@ -95,27 +95,57 @@ export default function PacientesPage() {
 
   // Enriquecer pacientes con última visita, próxima cita y nombre de propietario (usando campos reales)
   const patientsWithVisits = patients.map((patient) => {
-    // Buscar visitas del paciente y obtener la más reciente (usando patientid)
+    // Buscar visitas del paciente (usando patientid)
     const patientVisits = visits.filter(
       (v: any) => String(v.patientid) === String(patient.id),
     );
+
+    // Buscar citas completadas del paciente (usando patientid)
+    const patientCompletedAppointments = appointments.filter(
+      (a: any) =>
+        String(a.patientid) === String(patient.id) && a.status === "Completada",
+    );
+
+    // Combinar visitas y citas completadas para obtener la más reciente
+    const allVisits = [
+      ...patientVisits.map((v: any) => ({ date: v.date, source: "visit" })),
+      ...patientCompletedAppointments.map((a: any) => ({
+        date: a.date,
+        source: "appointment",
+      })),
+    ];
+
     const lastVisit =
-      patientVisits.length > 0
-        ? patientVisits.reduce((latest: any, curr: any) =>
-            new Date(curr.date) > new Date(latest.date) ? curr : latest,
+      allVisits.length > 0
+        ? allVisits.reduce((latest: any, curr: any) =>
+            new Date(
+              curr.date.includes("T") ? curr.date : curr.date + "T00:00:00",
+            ) >
+            new Date(
+              latest.date.includes("T")
+                ? latest.date
+                : latest.date + "T00:00:00",
+            )
+              ? curr
+              : latest,
           ).date
         : undefined;
 
-    // Buscar citas futuras del paciente y obtener la más próxima (usando patientid)
+    // Buscar citas futuras del paciente y obtener la más próxima (usando patientid, solo programadas)
     const now = new Date();
     const patientAppointments = appointments.filter(
       (a: any) =>
-        String(a.patientid) === String(patient.id) && new Date(a.date) > now,
+        String(a.patientid) === String(patient.id) &&
+        new Date(a.date + "T00:00:00") > now &&
+        a.status === "Programada",
     );
     const nextAppointment =
       patientAppointments.length > 0
         ? patientAppointments.reduce((soonest: any, curr: any) =>
-            new Date(curr.date) < new Date(soonest.date) ? curr : soonest,
+            new Date(curr.date + "T00:00:00") <
+            new Date(soonest.date + "T00:00:00")
+              ? curr
+              : soonest,
           ).date
         : undefined;
 
@@ -457,31 +487,25 @@ export default function PacientesPage() {
                         <TableCell className="text-muted-foreground">
                           {(() => {
                             if (!patient.lastVisit) return "N/A";
-                            const visit = visits.find(
-                              (v: any) =>
-                                v.patientId === patient.id &&
-                                v.date === patient.lastVisit,
-                            );
-                            if (!visit)
-                              return new Date(
-                                patient.lastVisit,
-                              ).toLocaleDateString("es-ES");
-                            return `${new Date(visit.date).toLocaleDateString("es-ES")} - ${visit.diagnosis || visit.notes || ""}`;
+                            const dateStr = patient.lastVisit.includes("T")
+                              ? patient.lastVisit
+                              : patient.lastVisit + "T00:00:00";
+                            const date = new Date(dateStr);
+                            return isNaN(date.getTime())
+                              ? "N/A"
+                              : date.toLocaleDateString("es-ES");
                           })()}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {(() => {
                             if (!patient.nextVisit) return "N/A";
-                            const appointment = appointments.find(
-                              (a: any) =>
-                                a.patientId === patient.id &&
-                                a.date === patient.nextVisit,
-                            );
-                            if (!appointment)
-                              return new Date(
-                                patient.nextVisit,
-                              ).toLocaleDateString("es-ES");
-                            return `${new Date(appointment.date).toLocaleDateString("es-ES")} - ${appointment.notes || ""}`;
+                            const dateStr = patient.nextVisit.includes("T")
+                              ? patient.nextVisit
+                              : patient.nextVisit + "T00:00:00";
+                            const date = new Date(dateStr);
+                            return isNaN(date.getTime())
+                              ? "N/A"
+                              : date.toLocaleDateString("es-ES");
                           })()}
                         </TableCell>
                         <TableCell>

@@ -217,7 +217,7 @@ export default function ClientesPage() {
                         {(() => {
                           const fecha = client.registrationdate;
                           if (!fecha) return "-";
-                          const d = new Date(fecha);
+                          const d = new Date(fecha + "T00:00:00");
                           return isNaN(d.getTime())
                             ? "-"
                             : d.toLocaleDateString("es-ES");

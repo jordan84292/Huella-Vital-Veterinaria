@@ -94,45 +94,27 @@ export function PatientDialog({
 
   useEffect(() => {
     if (patient) {
-      // Log del formData después de setearlo
-      setTimeout(() => {}, 500);
-      // Si hay cedula, consultar el cliente y actualizar ownerName
-      if (patient.cedula) {
-        (async () => {
-          try {
-            const res = await axiosApi.get(`/clients/${patient.cedula}`);
-
-            const client = res.data?.data;
-            setFormData((prev) => ({
-              ...prev,
-              ownerName: client?.name || "",
-            }));
-          } catch (err) {
-            setFormData((prev) => ({ ...prev, ownerName: "" }));
-          }
-        })();
-      }
+      // Validar y ajustar peso
       let safeWeight = patient.weight;
       if (!safeWeight || safeWeight <= 0) {
         safeWeight = 0.1;
-        dispatch(
-          setMessage({
-            view: true,
-            type: "Error",
-            text: "Peso inválido",
-            desc: "El paciente no tenía peso registrado. Se ha ajustado a 0.1 kg.",
-          }),
-        );
       }
-      // Tomar birthdate (minúscula) o birthDate (mayúscula) y formatear a yyyy-MM-dd
+
+      // Formatear fecha de nacimiento a yyyy-MM-dd
       let birthDateRaw = patient.birthdate || "";
       let birthDateFormatted = "";
       if (birthDateRaw) {
-        const d = new Date(birthDateRaw);
-        if (!isNaN(d.getTime())) {
-          birthDateFormatted = d.toISOString().slice(0, 10);
+        // Si la fecha viene en formato ISO, extraer solo la parte de la fecha
+        if (birthDateRaw.includes("T")) {
+          birthDateFormatted = birthDateRaw.split("T")[0];
+        } else {
+          const d = new Date(birthDateRaw + "T00:00:00");
+          if (!isNaN(d.getTime())) {
+            birthDateFormatted = d.toISOString().slice(0, 10);
+          }
         }
       }
+
       setFormData({
         name: patient.name,
         species: patient.species,
@@ -140,7 +122,6 @@ export function PatientDialog({
         weight: safeWeight,
         gender: patient.gender,
         birthDate: birthDateFormatted,
-        // ownerName eliminado, no existe en el tipo
         ownerId: patient.cedula || "",
         color: patient.color || "",
         allergies: patient.allergies || "",

@@ -13,18 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ArrowLeft, Calendar, Syringe, Plus, Loader2 } from "lucide-react";
-import { VisitDialog } from "@/components/visit-dialog";
-import { VaccinationDialog } from "@/components/vaccination-dialog";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -87,10 +76,6 @@ export default function PatientDetailPage() {
   );
   const [lastVisit, setLastVisit] = useState<any>(null);
   const [nextAppointment, setNextAppointment] = useState<any>(null);
-
-  const [visitDialogOpen, setVisitDialogOpen] = useState(false);
-  const [vaccinationDialogOpen, setVaccinationDialogOpen] = useState(false);
-  const [expandedVisit, setExpandedVisit] = useState<string | null>(null);
 
   // Cargar datos del paciente
   const fetchPatientData = async () => {
@@ -267,7 +252,9 @@ export default function PatientDetailPage() {
                     Fecha de Nacimiento
                   </span>
                   <span className="text-sm font-medium">
-                    {new Date(patient.birthDate).toLocaleDateString("es-ES")}
+                    {new Date(
+                      patient.birthDate + "T00:00:00",
+                    ).toLocaleDateString("es-ES")}
                   </span>
                 </div>
               )}
@@ -287,7 +274,9 @@ export default function PatientDetailPage() {
                     Última Visita
                   </span>
                   <span className="text-sm font-medium">
-                    {new Date(lastVisit.date).toLocaleDateString("es-ES")}
+                    {new Date(lastVisit.date + "T00:00:00").toLocaleDateString(
+                      "es-ES",
+                    )}
                   </span>
                 </div>
               )}
@@ -297,7 +286,9 @@ export default function PatientDetailPage() {
                     Próxima Cita
                   </span>
                   <span className="text-sm font-medium">
-                    {new Date(nextAppointment.date).toLocaleDateString("es-ES")}
+                    {new Date(
+                      nextAppointment.date + "T00:00:00",
+                    ).toLocaleDateString("es-ES")}
                   </span>
                 </div>
               )}
@@ -339,54 +330,66 @@ export default function PatientDetailPage() {
           </Card>
         </div>
 
-        <Tabs defaultValue="timeline" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="timeline" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              Línea de Tiempo
-            </TabsTrigger>
-            <TabsTrigger value="visits" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              Historial de Visitas
-            </TabsTrigger>
-            <TabsTrigger value="vaccinations" className="gap-2">
-              <Syringe className="h-4 w-4" />
-              Vacunaciones
-            </TabsTrigger>
-          </TabsList>
+        <Card>
+          <CardHeader>
+            <CardTitle>Línea de Tiempo Médica</CardTitle>
+            <CardDescription>
+              Historial completo de eventos médicos del paciente
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {(() => {
+                const allEvents = [
+                  ...visits.map((v) => ({
+                    ...v,
+                    eventType: "visit" as const,
+                    date: v.date, // Asegurar campo date
+                  })),
+                  ...vaccinations.map((v) => ({
+                    ...v,
+                    eventType: "vaccination" as const,
+                    date: v.created_date, // Normalizar a campo date
+                  })),
+                ];
 
-          <TabsContent value="timeline" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Línea de Tiempo Médica</CardTitle>
-                <CardDescription>
-                  Historial completo de eventos médicos del paciente
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    ...visits.map((v) => ({
-                      ...v,
-                      eventType: "visit" as const,
-                    })),
-                    ...vaccinations.map((v) => ({
-                      ...v,
-                      eventType: "vaccination" as const,
-                    })),
-                  ]
-                    .sort(
-                      (a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime(),
-                    )
-                    .map((event) => (
+                const filteredEvents = allEvents.filter((event) => {
+                  // Filtrar eventos sin fecha válida antes de ordenar
+                  if (!event.date) return false;
+                  // No agregar T00:00:00 si la fecha ya lo tiene
+                  const dateStr = event.date.includes("T")
+                    ? event.date
+                    : event.date + "T00:00:00";
+                  const testDate = new Date(dateStr);
+                  return !isNaN(testDate.getTime());
+                });
+
+                return filteredEvents
+                  .sort((a, b) => {
+                    const dateA = a.date.includes("T")
+                      ? a.date
+                      : a.date + "T00:00:00";
+                    const dateB = b.date.includes("T")
+                      ? b.date
+                      : b.date + "T00:00:00";
+                    return (
+                      new Date(dateB).getTime() - new Date(dateA).getTime()
+                    );
+                  })
+                  .map((event) => {
+                    const dateStr = event.date.includes("T")
+                      ? event.date
+                      : event.date + "T00:00:00";
+                    const eventDate = new Date(dateStr);
+
+                    return (
                       <div
                         key={`${event.eventType}-${event.id}`}
                         className="flex gap-4 border-l-2 border-primary pl-4 pb-4 last:pb-0"
                       >
                         <div className="shrink-0 w-24 pt-1">
                           <p className="text-sm font-medium">
-                            {new Date(event.date).toLocaleDateString("es-ES")}
+                            {eventDate.toLocaleDateString("es-ES")}
                           </p>
                         </div>
                         <Card className="flex-1">
@@ -448,9 +451,7 @@ export default function PatientDetailPage() {
                                     Fecha dosis:
                                   </span>
                                   <Badge variant="secondary">
-                                    {new Date(
-                                      (event as Vaccination).created_date,
-                                    ).toLocaleDateString("es-ES")}
+                                    {eventDate.toLocaleDateString("es-ES")}
                                   </Badge>
                                 </div>
                               </>
@@ -458,212 +459,18 @@ export default function PatientDetailPage() {
                           </CardContent>
                         </Card>
                       </div>
-                    ))}
-                  {visits.length === 0 && vaccinations.length === 0 && (
-                    <p className="text-center text-muted-foreground py-8">
-                      No hay eventos registrados
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="visits" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Historial de Visitas</CardTitle>
-                    <CardDescription>
-                      Registro completo de consultas y tratamientos
-                    </CardDescription>
-                  </div>
-                  <Button
-                    onClick={() => setVisitDialogOpen(true)}
-                    className="gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Nueva Visita
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {visits.length > 0 ? (
-                    visits.map((visit) => (
-                      <Card key={visit.id} className="overflow-hidden">
-                        <CardHeader
-                          className="cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() =>
-                            setExpandedVisit(
-                              expandedVisit === visit.id ? null : visit.id,
-                            )
-                          }
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div>
-                                <CardTitle className="text-base">
-                                  {visit.diagnosis}
-                                </CardTitle>
-                                <CardDescription className="mt-1">
-                                  {new Date(visit.date).toLocaleDateString(
-                                    "es-ES",
-                                    {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    },
-                                  )}
-                                </CardDescription>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Badge variant={getVisitTypeBadge(visit.type)}>
-                                {visit.type}
-                              </Badge>
-                              <span className="text-lg font-bold text-primary">
-                                ₡{Number(visit.cost).toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        {expandedVisit === visit.id && (
-                          <CardContent className="border-t bg-muted/20">
-                            <div className="grid gap-4 pt-4 md:grid-cols-2">
-                              <div className="space-y-3">
-                                <div>
-                                  <p className="text-sm font-medium mb-1">
-                                    Veterinario
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {visit.veterinarian}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-sm font-medium mb-1">
-                                    Tratamiento
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {visit.treatment}
-                                  </p>
-                                </div>
-                              </div>
-                              {visit.notes && (
-                                <div>
-                                  <p className="text-sm font-medium mb-1">
-                                    Notas Adicionales
-                                  </p>
-                                  <div className="rounded-md bg-background p-3">
-                                    <p className="text-sm text-muted-foreground">
-                                      {visit.notes}
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        )}
-                      </Card>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground py-8">
-                      No hay visitas registradas
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="vaccinations" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Registro de Vacunaciones</CardTitle>
-                    <CardDescription>
-                      Historial completo de vacunas aplicadas
-                    </CardDescription>
-                  </div>
-                  <Button
-                    onClick={() => setVaccinationDialogOpen(true)}
-                    className="gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Nueva Vacuna
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {vaccinations.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Fecha</TableHead>
-                        <TableHead>Vacuna</TableHead>
-                        <TableHead>Veterinario</TableHead>
-                        <TableHead>Notas</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {vaccinations.map((vaccination) => (
-                        <TableRow key={vaccination.id}>
-                          <TableCell className="font-medium">
-                            {vaccination.created_date
-                              ? new Date(
-                                  vaccination.created_date,
-                                ).toLocaleDateString("es-ES")
-                              : "-"}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {vaccination.vaccine}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {vaccination.veterinarian}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {vaccination.notes || "-"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    No hay vacunaciones registradas
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                    );
+                  });
+              })()}
+              {visits.length === 0 && vaccinations.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">
+                  No hay eventos registrados
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </main>
-
-      <VisitDialog
-        open={visitDialogOpen}
-        onOpenChange={(open) => {
-          setVisitDialogOpen(open);
-          if (!open) {
-            // Al cerrar el diálogo, refrescar datos del paciente
-            fetchPatientData();
-          }
-        }}
-        patientId={patient.id}
-      />
-      <VaccinationDialog
-        open={vaccinationDialogOpen}
-        onOpenChange={(open) => {
-          setVaccinationDialogOpen(open);
-          if (!open) {
-            // Al cerrar el diálogo, refrescar datos del paciente
-            fetchPatientData();
-          }
-        }}
-        patientId={patient.id}
-      />
     </div>
   );
 }

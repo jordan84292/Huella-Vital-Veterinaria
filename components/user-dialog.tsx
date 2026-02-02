@@ -49,7 +49,7 @@ const initialForm: User = {
   nombre: "",
   email: "",
   telefono: "",
-  rol: "4",
+  rol: "4", // 4 = Asistente por defecto
   status: "Activo",
 };
 export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
@@ -59,7 +59,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     nombre: "",
     email: "",
     telefono: "",
-    rol: "Asistente" as User["rol"],
+    rol: "4" as User["rol"], // Usar código numérico
     status: "Activo" as User["status"],
   });
   const [validationErrors, setValidationErrors] = useState<
@@ -190,10 +190,10 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Administrador">Administrador</SelectItem>
-                  <SelectItem value="Veterinario">Veterinario</SelectItem>
-                  <SelectItem value="Asistente">Asistente</SelectItem>
-                  <SelectItem value="Recepcionista">Recepcionista</SelectItem>
+                  <SelectItem value="1">Administrador</SelectItem>
+                  <SelectItem value="2">Veterinario</SelectItem>
+                  <SelectItem value="3">Recepcionista</SelectItem>
+                  <SelectItem value="4">Asistente</SelectItem>
                 </SelectContent>
               </Select>
             </div>

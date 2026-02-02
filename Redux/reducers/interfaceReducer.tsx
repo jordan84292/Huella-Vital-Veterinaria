@@ -15,7 +15,7 @@ export interface interfaceReducer {
     nombre: string;
     email: string;
     telefono: string;
-    rolName: string;
+    rol: string; // Rol numérico: 1=Admin, 2=Veterinario, 3=Recepcionista, 4=Asistente, 5=Cliente
     password?: string;
     status: string;
     fecha_creacion: string;
@@ -117,7 +117,7 @@ const initialState: interfaceReducer = {
     email: "",
     telefono: "",
     password: "",
-    rolName: "",
+    rol: "",
     status: "",
     fecha_creacion: "2025-11-01",
     fecha_actualizacion: "2025-11-01",

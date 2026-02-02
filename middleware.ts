@@ -8,6 +8,7 @@ const protectedRoutes = [
   "/clientes",
   "/pacientes",
   "/citas",
+  "/atender-pacientes",
   "/configuracion",
   "/perfil",
 ];
@@ -23,11 +24,11 @@ export async function middleware(request: NextRequest) {
 
   // Verificar si la ruta actual está protegida
   const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
+    pathname.startsWith(route),
   );
 
   const isPublicRoute = publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route)
+    (route) => pathname === route || pathname.startsWith(route),
   );
 
   // Si es una ruta protegida
