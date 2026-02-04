@@ -16,7 +16,7 @@ const protectedRoutes = [
 // Rutas públicas (login, register, etc)
 const publicRoutes = ["/", "/login", "/register"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Obtener el token de la cookie
