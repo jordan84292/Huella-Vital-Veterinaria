@@ -51,7 +51,7 @@ export const NumberToUserRole: Record<string, UserRole> = {
   "4": UserRole.ASIST,
 };
 
-type User = {
+export type User = {
   id: string;
   nombre: string;
   email: string;

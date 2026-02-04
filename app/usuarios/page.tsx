@@ -43,7 +43,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserDialog } from "@/components/user-dialog";
+import {
+  UserDialog,
+  UserRole,
+  NumberToUserRole,
+} from "@/components/user-dialog";
 import { axiosApi } from "../axiosApi/axiosApi";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/Redux/store";
@@ -53,15 +57,9 @@ import {
   setUsers,
 } from "@/Redux/reducers/interfaceReducer";
 
-type User = {
-  id: string;
-  nombre: string;
-  email: string;
-  rol: string; // código de rol
-  status: "Activo" | "Inactivo";
-  telefono: string;
-};
+import type { User } from "@/components/user-dialog";
 
+// Se mapean los roles a los números correspondientes
 // Mapeo de códigos de rol a nombres legibles
 const ROLES: Record<string, string> = {
   "1": "Administrador",
@@ -123,7 +121,7 @@ export default function UsuariosPage() {
     setDialogOpen(true);
   };
 
-  const handleEditUser = (user: User) => {
+  const handleEditUser = (user: any) => {
     // No permitir editar usuarios con rol Cliente (5)
     if (user.rol === "5") {
       dispatch(
@@ -136,8 +134,8 @@ export default function UsuariosPage() {
       );
       return;
     }
-
-    setSelectedUser(user);
+    // Convertir rol a UserRole para el diálogo
+    setSelectedUser({ ...user, rol: NumberToUserRole[user.rol] ?? user.rol });
     setDialogOpen(true);
   };
 
