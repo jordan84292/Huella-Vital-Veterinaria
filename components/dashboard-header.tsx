@@ -104,7 +104,7 @@ export function DashboardHeader() {
                 <div className="hidden flex-col items-start text-left md:flex">
                   <span className="text-sm font-medium">{user.nombre}</span>
                   <span className="text-xs text-muted-foreground">
-                    {user.rolName}
+                    {user.rol}
                   </span>
                 </div>
               </Button>

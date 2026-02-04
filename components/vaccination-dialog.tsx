@@ -172,12 +172,12 @@ export function VaccinationDialog({
     id: string;
     nombre: string;
     email: string;
-    rolName: string;
+    rol: number;
     status: string;
     telefono: string;
     cedula?: string;
   };
-  const veterinarians = users.filter((u: User) => u.rolName === "Veterinario");
+  const veterinarians = users.filter((u: any) => u.rol === 2);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
