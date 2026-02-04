@@ -11,12 +11,16 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { NumberToUserRole, UserRole } from "@/components/user-dialog";
 import { Mail, Phone, MapPin, Calendar, Briefcase } from "lucide-react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/Redux/store";
 
 export default function PerfilPage() {
   const user = useSelector((state: RootState) => state.interface.auth);
+
+  // Mostrar nombre legible del rol
+  const readableRole = NumberToUserRole?.[user.rol] ?? user.rol;
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,7 +58,7 @@ export default function PerfilPage() {
                 <h3 className="text-lg font-semibold md:text-xl">
                   {user.nombre}
                 </h3>
-                <Badge className="mt-2">{user.rol}</Badge>
+                <Badge className="mt-2">{readableRole}</Badge>
               </div>
             </CardContent>
           </Card>
@@ -104,7 +108,7 @@ export default function PerfilPage() {
                   <p className="text-sm text-muted-foreground">
                     Especialización
                   </p>
-                  <p className="font-medium">{user.rol}</p>
+                  <p className="font-medium">{readableRole}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 border-b border-border pb-3">

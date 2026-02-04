@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { NumberToUserRole } from "@/components/user-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -104,7 +105,7 @@ export function DashboardHeader() {
                 <div className="hidden flex-col items-start text-left md:flex">
                   <span className="text-sm font-medium">{user.nombre}</span>
                   <span className="text-xs text-muted-foreground">
-                    {user.rol}
+                    {NumberToUserRole?.[user.rol] ?? user.rol}
                   </span>
                 </div>
               </Button>

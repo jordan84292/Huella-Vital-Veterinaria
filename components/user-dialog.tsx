@@ -30,11 +30,32 @@ import {
 } from "@/Redux/reducers/interfaceReducer";
 import { validateUser } from "@/lib/validations";
 
+export enum UserRole {
+  ADMIN = "Administrador",
+  VET = "Veterinario",
+  RECEP = "Recepcionista",
+  ASIST = "Asistente",
+}
+
+// Mapeo entre string legible y número para backend
+export const UserRoleToNumber: Record<UserRole, string> = {
+  [UserRole.ADMIN]: "1",
+  [UserRole.VET]: "2",
+  [UserRole.RECEP]: "3",
+  [UserRole.ASIST]: "4",
+};
+export const NumberToUserRole: Record<string, UserRole> = {
+  "1": UserRole.ADMIN,
+  "2": UserRole.VET,
+  "3": UserRole.RECEP,
+  "4": UserRole.ASIST,
+};
+
 type User = {
   id: string;
   nombre: string;
   email: string;
-  rol: string;
+  rol: UserRole;
   status: "Activo" | "Inactivo";
   telefono: string;
 };
@@ -49,19 +70,12 @@ const initialForm: User = {
   nombre: "",
   email: "",
   telefono: "",
-  rol: "4", // 4 = Asistente por defecto
+  rol: UserRole.ASIST, // Asistente por defecto
   status: "Activo",
 };
 export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState({
-    id: "",
-    nombre: "",
-    email: "",
-    telefono: "",
-    rol: "4" as User["rol"], // Usar código numérico
-    status: "Activo" as User["status"],
-  });
+  const [formData, setFormData] = useState<User>(initialForm);
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
@@ -73,7 +87,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
         nombre: user.nombre,
         email: user.email,
         telefono: user.telefono,
-        rol: user.rol,
+        rol: NumberToUserRole[user.rol] ?? UserRole.ASIST,
         status: user.status,
       });
     } else {
@@ -85,13 +99,20 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
     e.preventDefault();
 
     dispatch(setIsLoading(true));
+
+    // Convertir rol a número antes de enviar al backend
+    const dataToSend = {
+      ...formData,
+      rol: UserRoleToNumber[formData.rol],
+    };
+
     const sendData = async () => {
       try {
         let res;
         if (!user) {
-          res = await axiosApi.post("/users", formData);
+          res = await axiosApi.post("/users", dataToSend);
         } else {
-          res = await axiosApi.put(`/users/${formData.id}`, formData);
+          res = await axiosApi.put(`/users/${formData.id}`, dataToSend);
         }
 
         dispatch(
@@ -182,7 +203,7 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                 onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    rol: value as User["rol"],
+                    rol: value as UserRole,
                   })
                 }
               >
@@ -190,10 +211,10 @@ export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Administrador</SelectItem>
-                  <SelectItem value="2">Veterinario</SelectItem>
-                  <SelectItem value="3">Recepcionista</SelectItem>
-                  <SelectItem value="4">Asistente</SelectItem>
+                  <SelectItem value={UserRole.ADMIN}>Administrador</SelectItem>
+                  <SelectItem value={UserRole.VET}>Veterinario</SelectItem>
+                  <SelectItem value={UserRole.RECEP}>Recepcionista</SelectItem>
+                  <SelectItem value={UserRole.ASIST}>Asistente</SelectItem>
                 </SelectContent>
               </Select>
             </div>
