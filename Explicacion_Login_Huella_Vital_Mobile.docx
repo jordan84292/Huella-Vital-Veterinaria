@@ -1,0 +1,43 @@
+# Explicación del Login en Huella Vital Mobile
+
+## Introducción
+El proceso de login en la aplicación Huella Vital Mobile permite a los usuarios autenticarse de manera segura para acceder a las funcionalidades protegidas de la app. A continuación, se describe el flujo y los componentes principales involucrados en el proceso de autenticación.
+
+## Flujo de Login
+1. **Pantalla de Login:**
+   - El usuario ingresa su correo electrónico y contraseña en el formulario de inicio de sesión.
+   - Se valida que ambos campos estén completos antes de enviar la solicitud.
+
+2. **Envío de Credenciales:**
+   - Al presionar el botón de login, la app utiliza la función `axiosApi` para enviar una petición HTTP POST al endpoint `/auth/login` del backend.
+   - El cuerpo de la solicitud contiene el email y la contraseña proporcionados por el usuario.
+
+3. **Validación en el Backend:**
+   - El backend recibe la solicitud y valida las credenciales.
+   - Si son correctas, responde con un token de autenticación (por ejemplo, JWT) y los datos del usuario.
+   - Si son incorrectas, responde con un mensaje de error.
+
+4. **Manejo de la Respuesta:**
+   - Si el login es exitoso, la app almacena el token y los datos del usuario en el almacenamiento seguro (por ejemplo, AsyncStorage).
+   - El usuario es redirigido a la pantalla principal o dashboard.
+   - Si ocurre un error, se muestra un mensaje indicando el motivo (credenciales incorrectas, usuario inactivo, etc.).
+
+## Seguridad
+- Las credenciales se envían siempre por HTTPS para proteger la información.
+- El token se utiliza en las siguientes peticiones para autenticar al usuario.
+- El token puede tener expiración y la app debe manejar la expiración y el refresco del mismo si es necesario.
+
+## Componentes Relacionados
+- **Pantalla/LoginForm:** Componente donde el usuario ingresa sus datos.
+- **axiosApi:** Encargado de realizar las peticiones HTTP al backend.
+- **Manejo de estado:** Puede usarse Redux o Context para almacenar el estado de autenticación.
+
+## Resumen Visual
+1. Usuario ingresa email y contraseña.
+2. App envía datos al backend.
+3. Backend valida y responde con token.
+4. App almacena token y redirige al usuario.
+
+---
+
+Este flujo asegura que solo usuarios autenticados puedan acceder a las funcionalidades protegidas de Huella Vital Mobile.
