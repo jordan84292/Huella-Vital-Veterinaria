@@ -113,7 +113,7 @@ export default function ConfiguracionPage() {
           nombre: formData.nombre,
           email: formData.email,
           telefono: formData.telefono,
-          rolName: formData.rolName,
+          rolName: formData.rol,
           status: formData.status,
         };
 
@@ -302,9 +302,9 @@ export default function ConfiguracionPage() {
                   <div className="space-y-2">
                     <Label htmlFor="rol">Rol</Label>
                     <Select
-                      value={formData.rolName}
+                      value={formData.rol || ""}
                       onValueChange={(value) =>
-                        setFormData({ ...formData, rolName: value })
+                        setFormData({ ...formData, rol: value })
                       }
                     >
                       <SelectTrigger id="rol">

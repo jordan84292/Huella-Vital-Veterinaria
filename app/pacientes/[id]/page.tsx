@@ -366,20 +366,27 @@ export default function PatientDetailPage() {
 
                 return filteredEvents
                   .sort((a, b) => {
-                    const dateA = a.date.includes("T")
-                      ? a.date
-                      : a.date + "T00:00:00";
-                    const dateB = b.date.includes("T")
-                      ? b.date
-                      : b.date + "T00:00:00";
+                    const dateA =
+                      a.date && a.date.includes("T")
+                        ? a.date
+                        : a.date
+                          ? a.date + "T00:00:00"
+                          : "1970-01-01T00:00:00";
+                    const dateB =
+                      b.date && b.date.includes("T")
+                        ? b.date
+                        : b.date
+                          ? b.date + "T00:00:00"
+                          : "1970-01-01T00:00:00";
                     return (
                       new Date(dateB).getTime() - new Date(dateA).getTime()
                     );
                   })
                   .map((event) => {
-                    const dateStr = event.date.includes("T")
-                      ? event.date
-                      : event.date + "T00:00:00";
+                    const dateStr =
+                      event.date && event.date.includes("T")
+                        ? event.date
+                        : event.date + "T00:00:00";
                     const eventDate = new Date(dateStr);
 
                     return (

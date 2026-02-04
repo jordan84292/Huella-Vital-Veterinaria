@@ -54,7 +54,7 @@ export default function PerfilPage() {
                 <h3 className="text-lg font-semibold md:text-xl">
                   {user.nombre}
                 </h3>
-                <Badge className="mt-2">{user.rolName}</Badge>
+                <Badge className="mt-2">{user.rol}</Badge>
               </div>
             </CardContent>
           </Card>
@@ -104,7 +104,7 @@ export default function PerfilPage() {
                   <p className="text-sm text-muted-foreground">
                     Especialización
                   </p>
-                  <p className="font-medium">{user.rolName}</p>
+                  <p className="font-medium">{user.rol}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 border-b border-border pb-3">
