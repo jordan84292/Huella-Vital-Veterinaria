@@ -80,6 +80,7 @@ export function AppointmentDialog({
   const [selectedPatientName, setSelectedPatientName] = useState("");
   const [ownerName, setOwnerName] = useState("");
 
+  const [selectedVeterinarianName, setSelectedVeterinarianName] = useState("");
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
 
   // Cargar datos iniciales
@@ -101,7 +102,17 @@ export function AppointmentDialog({
         // Cargar usuarios/veterinarios si no están en Redux
         if (users.length === 0) {
           const resUsers = await axiosApi.get("/users");
-          dispatch(setUsers(resUsers.data.data));
+          console.log("Todos los usuarios:", resUsers.data.data);
+          const veterinarians = resUsers.data.data.filter((user: any) => {
+            const rolValue = String(user.rol || user.role || "");
+            const isVet = rolValue === "2" || rolValue === "veterinarian";
+            console.log(
+              `Usuario: ${user.nombre}, Rol: ${rolValue}, Es veterinario: ${isVet}`,
+            );
+            return isVet;
+          });
+          console.log("Veterinarios filtrados:", veterinarians);
+          dispatch(setUsers(veterinarians));
         }
       } catch (error: any) {
         console.error("Error loading data:", error);
@@ -120,7 +131,7 @@ export function AppointmentDialog({
     if (appointment) {
       // Asegurar que la hora esté en formato HH:MM
       let timeValue = appointment.time || "";
-      console.log("Hora original del appointment:", appointment.time); // Debug
+
       // Si la hora viene sin formato correcto, intentar arreglarlo
       if (timeValue && !timeValue.includes(":")) {
         // Si viene en formato HHMM, convertir a HH:MM
@@ -128,7 +139,6 @@ export function AppointmentDialog({
           timeValue = `${timeValue.slice(0, 2)}:${timeValue.slice(2)}`;
         }
       }
-      console.log("Hora después de formatear:", timeValue); // Debug
 
       setFormData({
         patientId: String(appointment.patientId), // Asegurar que sea string
@@ -172,6 +182,25 @@ export function AppointmentDialog({
     }
   }, [appointment, open, patients, clients, todayStr]);
 
+  useEffect(() => {
+    if (open && !appointment) {
+      // Limpiar los campos del formulario al abrir el diálogo
+      setFormData({
+        patientId: "",
+        date: todayStr,
+        time: "",
+        type: "Consulta",
+        veterinarian: "",
+        status: "Programada",
+        notes: "",
+      });
+      setSelectedPatientName("");
+      setOwnerName("");
+      setSelectedVeterinarianName("");
+      setAvailableTimes([]);
+    }
+  }, [open, appointment]);
+
   // Manejar cambio de paciente
   const handlePatientChange = (patientId: string) => {
     setFormData({ ...formData, patientId });
@@ -202,8 +231,6 @@ export function AppointmentDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBackendError("");
-
-    console.log("formData en handleSubmit:", formData); // Debug
 
     // Validaciones frontend según reglas del backend
     // Paciente
@@ -240,7 +267,6 @@ export function AppointmentDialog({
     }
     // Hora
     if (!formData.time || formData.time.trim() === "") {
-      console.log("Error de validación - Time:", formData.time); // Debug
       setBackendError("La hora es requerida.");
       dispatch(
         setMessage({
@@ -268,23 +294,6 @@ export function AppointmentDialog({
           type: "Error",
           text: "Tipo inválido",
           desc: "El tipo de cita es requerido y debe ser válido.",
-        }),
-      );
-      return;
-    }
-    // Veterinario
-    if (
-      !formData.veterinarian ||
-      formData.veterinarian.trim().length < 2 ||
-      formData.veterinarian.trim().length > 255
-    ) {
-      setBackendError("El veterinario es requerido (2-255 caracteres).");
-      dispatch(
-        setMessage({
-          view: true,
-          type: "Error",
-          text: "Veterinario inválido",
-          desc: "El veterinario es requerido (2-255 caracteres).",
         }),
       );
       return;
@@ -325,7 +334,15 @@ export function AppointmentDialog({
         date: formData.date, // Ya está en formato YYYY-MM-DD del input type="date"
       };
 
-      console.log("Datos de cita a enviar:", appointmentData);
+      console.log("Datos enviados al backend:", appointmentData);
+
+      // Convertir el ID del veterinario al nombre antes de enviar
+      const selectedVeterinarian = veterinarians.find(
+        (v: any) => String(v.id) === String(formData.veterinarian),
+      );
+      if (selectedVeterinarian) {
+        appointmentData.veterinarian = selectedVeterinarian.nombre;
+      }
 
       let res;
       if (appointment) {
@@ -387,10 +404,41 @@ export function AppointmentDialog({
   // Función para cargar las horas disponibles según el veterinario
   const fetchAvailableTimes = async (veterinarianId: string) => {
     try {
-      const response = await axiosApi.get(
-        `/bookings/available-times?veterinarianId=${veterinarianId}`,
+      // Buscar el veterinario por ID para obtener su nombre
+      const selectedVet = users.find(
+        (v: any) => String(v.id) === String(veterinarianId),
       );
-      setAvailableTimes(response.data.times || []);
+
+      if (!selectedVet) {
+        console.error("Veterinario no encontrado");
+        setAvailableTimes([]);
+        return;
+      }
+
+      const veterinarianName = selectedVet.nombre;
+      const dateToUse = formData.date || todayStr; // Usar la fecha del formulario o la fecha de hoy
+
+      console.log(
+        "Fetching available times for veterinarian:",
+        veterinarianName,
+        "on date:",
+        dateToUse,
+      );
+
+      const response = await axiosApi.get(
+        `/booking/slots/available?veterinarian=${encodeURIComponent(veterinarianName)}&date=${dateToUse}`,
+      );
+      console.log("Available times response:", response.data);
+
+      // Extraer los horarios disponibles de la respuesta
+      if (response.data.data && response.data.data.availableSlots) {
+        const slots = response.data.data.availableSlots.map(
+          (slot: any) => slot.slot_time,
+        );
+        setAvailableTimes(slots);
+      } else {
+        setAvailableTimes([]);
+      }
     } catch (error) {
       console.error("Error al cargar las horas disponibles:", error);
       setAvailableTimes([]);
@@ -399,18 +447,37 @@ export function AppointmentDialog({
 
   // Actualizar las horas disponibles al seleccionar un veterinario
   const handleVeterinarianChange = (veterinarianId: string) => {
-    setFormData({ ...formData, veterinarian: veterinarianId });
-    fetchAvailableTimes(veterinarianId);
+    setFormData((prev) => ({ ...prev, veterinarian: veterinarianId }));
+
+    // Buscar el veterinario seleccionado
+    const selectedVeterinarian = veterinarians.find(
+      (v: any) => String(v.id) === String(veterinarianId),
+    );
+
+    if (selectedVeterinarian) {
+      setSelectedVeterinarianName(selectedVeterinarian.nombre || "");
+      // Esperar un momento para que el estado se actualice antes de cargar horarios
+      setTimeout(() => fetchAvailableTimes(veterinarianId), 100);
+    } else {
+      setSelectedVeterinarianName("");
+      setAvailableTimes([]); // Limpiar horarios si no se encuentra el veterinario
+    }
+  };
+
+  // Recargar horarios cuando cambie la fecha
+  const handleDateChange = (newDate: string) => {
+    setFormData((prev) => ({ ...prev, date: newDate }));
+    // Si hay un veterinario seleccionado, recargar horarios
+    if (formData.veterinarian) {
+      setTimeout(() => fetchAvailableTimes(formData.veterinarian), 100);
+    }
   };
 
   // Filtrar solo pacientes activos
   const activePatients = patients.filter((p) => p.status === "Activo");
 
   // Filtrar solo veterinarios (rol === "2" o rol === 2)
-  const veterinarians = users.filter((u) => String(u.rol) === "2");
-  console.log("Total usuarios:", users.length);
-  console.log("Veterinarios encontrados:", veterinarians.length);
-  console.log("Veterinarios:", veterinarians);
+  const veterinarians = users; // Ya se filtraron al cargar los datos
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -483,9 +550,7 @@ export function AppointmentDialog({
                 type="date"
                 value={formData.date}
                 min={todayStr}
-                onChange={(e) =>
-                  setFormData({ ...formData, date: e.target.value })
-                }
+                onChange={(e) => handleDateChange(e.target.value)}
                 required
               />
             </div>
@@ -493,14 +558,16 @@ export function AppointmentDialog({
               <Label htmlFor="time">Hora *</Label>
               <Select
                 value={formData.time}
-                onValueChange={(value) => setFormData({ ...formData, time: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, time: value })
+                }
                 required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona una hora" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableTimes.length > 0 ? (
+                  {availableTimes && availableTimes.length > 0 ? (
                     availableTimes.map((time) => (
                       <SelectItem key={time} value={time}>
                         {time}
@@ -561,6 +628,12 @@ export function AppointmentDialog({
                   )}
                 </SelectContent>
               </Select>
+              {selectedVeterinarianName && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  <span className="font-medium">Veterinario seleccionado:</span>{" "}
+                  {selectedVeterinarianName}
+                </p>
+              )}
             </div>
           </div>
 

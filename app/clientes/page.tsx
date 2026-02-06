@@ -67,6 +67,8 @@ export default function ClientesPage() {
   useEffect(() => {
     const getClients = async () => {
       const res = await axiosApi.get("/clients");
+      console.log("Clientes recibidos:", res.data.data);
+      console.log("Primer cliente (para debug):", res.data.data[0]);
       dispatch(setClients(res.data.data));
     };
     getClients();
@@ -217,10 +219,25 @@ export default function ClientesPage() {
                         {(() => {
                           const fecha = client.registrationdate;
                           if (!fecha) return "-";
-                          const d = new Date(fecha + "T00:00:00");
-                          return isNaN(d.getTime())
-                            ? "-"
-                            : d.toLocaleDateString("es-ES");
+
+                          try {
+                            // Intentar parsear la fecha directamente
+                            const d = new Date(fecha);
+
+                            if (isNaN(d.getTime())) {
+                              return "-";
+                            }
+
+                            // Formatear la fecha
+                            return d.toLocaleDateString("es-ES", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                            });
+                          } catch (error) {
+                            console.error("Error parsing date:", fecha, error);
+                            return "-";
+                          }
                         })()}
                       </TableCell>
                       <TableCell>

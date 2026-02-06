@@ -37,6 +37,9 @@ interface TodayAppointment {
   species: string;
   ownerName: string;
   type: string;
+  date: string;
+  status: string;
+  veterinarian: string;
 }
 
 export default function DashboardPage() {
@@ -87,20 +90,21 @@ export default function DashboardPage() {
           : [];
         const formattedAppointments = appointmentsArray
           .map((apt: any) => ({
-            patientId: apt.patientId,
+            id: apt.id,
+            date: apt.date, // Asegurarse de que la fecha esté correctamente asignada
             time: apt.time,
-            Paciente: apt.Paciente,
-            species: apt.species,
-            ownerName: apt.ownerName,
             type: apt.type,
+            veterinarian: apt.veterinarian, // Veterinario
+            status: apt.status, // Estado
+            patientName: apt.patientName || "Sin nombre",
+            species: apt.species || "Sin especie",
+            ownerName: apt.ownerName || "Sin propietario",
           }))
           .sort((a: any, b: any) => {
             // Ordenar por hora
             return a.time.localeCompare(b.time);
           })
           .slice(0, 4); // Mostrar solo las primeras 4 citas
-
-        console.log("Citas formateadas:", formattedAppointments);
 
         setTodayAppointments(formattedAppointments);
       } catch (error: any) {
@@ -229,14 +233,17 @@ export default function DashboardPage() {
                         {formatTime(item.time)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          <span>{item.Paciente}</span> ({item.species})
+                        <p className="text-xs text-muted-foreground truncate">
+                          <strong> Fecha:</strong> {item.date}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {item.ownerName}
+                          <strong> Estado:</strong> {item.status}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {item.type}
+                          <strong> Tipo:</strong> {item.type}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          <strong> Veterinario:</strong> {item.veterinarian}
                         </p>
                       </div>
                     </div>
