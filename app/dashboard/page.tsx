@@ -71,6 +71,8 @@ export default function DashboardPage() {
           `/appointments/date/${today}`,
         );
 
+        console.log("Citas de hoy desde la API:", appointmentsToday.data?.data);
+
         // Actualizar estadísticas
         setStats({
           totalUsers: usersStats.data.data.totalUsers || 0,
@@ -97,6 +99,8 @@ export default function DashboardPage() {
             return a.time.localeCompare(b.time);
           })
           .slice(0, 4); // Mostrar solo las primeras 4 citas
+
+        console.log("Citas formateadas:", formattedAppointments);
 
         setTodayAppointments(formattedAppointments);
       } catch (error: any) {
