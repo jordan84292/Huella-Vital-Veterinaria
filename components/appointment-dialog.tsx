@@ -80,6 +80,8 @@ export function AppointmentDialog({
   const [selectedPatientName, setSelectedPatientName] = useState("");
   const [ownerName, setOwnerName] = useState("");
 
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+
   // Cargar datos iniciales
   useEffect(() => {
     const loadData = async () => {
@@ -382,6 +384,25 @@ export function AppointmentDialog({
     }
   };
 
+  // Función para cargar las horas disponibles según el veterinario
+  const fetchAvailableTimes = async (veterinarianId: string) => {
+    try {
+      const response = await axiosApi.get(
+        `/bookings/available-times?veterinarianId=${veterinarianId}`,
+      );
+      setAvailableTimes(response.data.times || []);
+    } catch (error) {
+      console.error("Error al cargar las horas disponibles:", error);
+      setAvailableTimes([]);
+    }
+  };
+
+  // Actualizar las horas disponibles al seleccionar un veterinario
+  const handleVeterinarianChange = (veterinarianId: string) => {
+    setFormData({ ...formData, veterinarian: veterinarianId });
+    fetchAvailableTimes(veterinarianId);
+  };
+
   // Filtrar solo pacientes activos
   const activePatients = patients.filter((p) => p.status === "Activo");
 
@@ -470,16 +491,28 @@ export function AppointmentDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="time">Hora *</Label>
-              <Input
-                id="time"
-                type="time"
+              <Select
                 value={formData.time}
-                onChange={(e) => {
-                  setFormData({ ...formData, time: e.target.value });
-                  setBackendError(""); // Limpiar error al cambiar
-                }}
+                onValueChange={(value) => setFormData({ ...formData, time: value })}
                 required
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una hora" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTimes.length > 0 ? (
+                    availableTimes.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-times" disabled>
+                      No hay horas disponibles
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -508,9 +541,7 @@ export function AppointmentDialog({
               <Label htmlFor="veterinarian">Veterinario *</Label>
               <Select
                 value={formData.veterinarian}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, veterinarian: value })
-                }
+                onValueChange={handleVeterinarianChange}
                 required
               >
                 <SelectTrigger>
@@ -519,7 +550,7 @@ export function AppointmentDialog({
                 <SelectContent>
                   {veterinarians.length > 0 ? (
                     veterinarians.map((vet) => (
-                      <SelectItem key={vet.id} value={vet.nombre}>
+                      <SelectItem key={vet.id} value={vet.id}>
                         Dr(a). {vet.nombre}
                       </SelectItem>
                     ))
