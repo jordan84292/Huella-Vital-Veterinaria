@@ -270,7 +270,6 @@ export function ClientDialog({
                   }
                   placeholder="+506 0000-0000"
                   className={validationErrors.phone ? "border-red-500" : ""}
-                  minLength={12}
                   required
                 />
                 {validationErrors.phone && (
