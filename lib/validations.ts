@@ -124,8 +124,33 @@ export const validateClient = (data: {
   // Validar cédula
   if (!data.cedula?.trim()) {
     errors.cedula = "La cédula es requerida";
-  } else if (/^\d{9}$/.test(data.cedula.trim())) {
-    errors.cedula = "La cédula debe contener  9 dígitos numéricos";
+  } else {
+    const cedula = data.cedula.trim().replace(/\s+/g, "");
+
+    // Cédula Nacional (9 dígitos, provincia 1-7)
+    if (/^\d{9}$/.test(cedula)) {
+      const provincia = parseInt(cedula.charAt(0));
+      if (provincia < 1 || provincia > 7) {
+        errors.cedula =
+          "Cédula inválida: el primer dígito debe ser entre 1 y 7";
+      }
+    }
+    // Cédula Jurídica (10 dígitos, empieza con 2, 3 o 4) o DIDI (empieza con 1)
+    else if (/^\d{10}$/.test(cedula)) {
+      const primerDigito = parseInt(cedula.charAt(0));
+      if (![1, 2, 3, 4].includes(primerDigito)) {
+        errors.cedula = "Cédula de 10 dígitos debe empezar con 1, 2, 3 o 4";
+      }
+    }
+    // DIMEX (11-12 dígitos)
+    else if (/^\d{11,12}$/.test(cedula)) {
+      // DIMEX válido
+    }
+    // Formato inválido
+    else {
+      errors.cedula =
+        "Formato inválido. Debe ser: Cédula (9 dígitos), Cédula Jurídica/DIDI (10 dígitos) o DIMEX (11-12 dígitos)";
+    }
   }
 
   // Validar dirección
