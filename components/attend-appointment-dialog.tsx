@@ -80,7 +80,7 @@ export function AttendAppointmentDialog({
 
       await axiosApi.post(`/appointments/${appointment.id}/attend`, visitData);
 
-      console.log("Cita atendida correctamente, ID:", appointment.id);
+   
 
       // Si es vacunación y se especificó fecha/hora para próxima dosis, crear nueva cita
       if (
@@ -93,10 +93,7 @@ export function AttendAppointmentDialog({
           const patientId =
             (appointment as any).patientId || (appointment as any).patientid;
 
-          console.log(
-            "Creando nueva cita de vacunación para paciente:",
-            patientId,
-          );
+      
 
           const nextAppointment = {
             patientId: patientId,
@@ -108,14 +105,14 @@ export function AttendAppointmentDialog({
             notes: `Próxima dosis - ${formData.diagnosis}`,
           };
 
-          console.log("Datos de nueva cita:", nextAppointment);
+          
 
           const response = await axiosApi.post(
             "/appointments",
             nextAppointment,
           );
 
-          console.log("Nueva cita creada:", response.data);
+
 
           dispatch(
             setMessage({

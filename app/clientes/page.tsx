@@ -67,8 +67,6 @@ export default function ClientesPage() {
   useEffect(() => {
     const getClients = async () => {
       const res = await axiosApi.get("/clients");
-      console.log("Clientes recibidos:", res.data.data);
-      console.log("Primer cliente (para debug):", res.data.data[0]);
       dispatch(setClients(res.data.data));
     };
     getClients();

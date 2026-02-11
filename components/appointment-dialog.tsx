@@ -102,16 +102,14 @@ export function AppointmentDialog({
         // Cargar usuarios/veterinarios si no están en Redux
         if (users.length === 0) {
           const resUsers = await axiosApi.get("/users");
-          console.log("Todos los usuarios:", resUsers.data.data);
+         
           const veterinarians = resUsers.data.data.filter((user: any) => {
             const rolValue = String(user.rol || user.role || "");
             const isVet = rolValue === "2" || rolValue === "veterinarian";
-            console.log(
-              `Usuario: ${user.nombre}, Rol: ${rolValue}, Es veterinario: ${isVet}`,
-            );
+           
             return isVet;
           });
-          console.log("Veterinarios filtrados:", veterinarians);
+        
           dispatch(setUsers(veterinarians));
         }
       } catch (error: any) {
@@ -334,7 +332,7 @@ export function AppointmentDialog({
         date: formData.date, // Ya está en formato YYYY-MM-DD del input type="date"
       };
 
-      console.log("Datos enviados al backend:", appointmentData);
+     
 
       // Convertir el ID del veterinario al nombre antes de enviar
       const selectedVeterinarian = veterinarians.find(
@@ -418,17 +416,12 @@ export function AppointmentDialog({
       const veterinarianName = selectedVet.nombre;
       const dateToUse = formData.date || todayStr; // Usar la fecha del formulario o la fecha de hoy
 
-      console.log(
-        "Fetching available times for veterinarian:",
-        veterinarianName,
-        "on date:",
-        dateToUse,
-      );
+     
 
       const response = await axiosApi.get(
         `/booking/slots/available?veterinarian=${encodeURIComponent(veterinarianName)}&date=${dateToUse}`,
       );
-      console.log("Available times response:", response.data);
+
 
       // Extraer los horarios disponibles de la respuesta
       if (response.data.data && response.data.data.availableSlots) {

@@ -74,8 +74,6 @@ export default function DashboardPage() {
           `/appointments/date/${today}`,
         );
 
-        console.log("Citas de hoy desde la API:", appointmentsToday.data?.data);
-
         // Actualizar estadísticas
         setStats({
           totalUsers: usersStats.data.data.totalUsers || 0,

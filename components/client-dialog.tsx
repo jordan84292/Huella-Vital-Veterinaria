@@ -137,7 +137,7 @@ export function ClientDialog({
             return;
           }
 
-          console.log(`Actualizando cliente con ID/Cédula: ${clientId}`);
+        
           res = await axiosApi.put(`/clients/${clientId}`, {
             ...formData,
             cedula: clientId, // Asegurar que se envíe la cédula
