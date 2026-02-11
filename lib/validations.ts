@@ -124,8 +124,8 @@ export const validateClient = (data: {
   // Validar cédula
   if (!data.cedula?.trim()) {
     errors.cedula = "La cédula es requerida";
-  } else if (!/^\d{9,}$/.test(data.cedula.trim())) {
-    errors.cedula = "La cédula debe contener al menos 9 dígitos numéricos";
+  } else if (/^\d{9}$/.test(data.cedula.trim())) {
+    errors.cedula = "La cédula debe contener  9 dígitos numéricos";
   }
 
   // Validar dirección
