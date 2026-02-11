@@ -117,10 +117,15 @@ export const validateClient = (data: {
   // Validar teléfono
   if (!data.phone?.trim()) {
     errors.phone = "El teléfono es requerido";
-  } else if (!/^[\+]?[0-9\-\(\)\s]{7,20}$/.test(data.phone.trim())) {
-    errors.phone = "Formato de teléfono inválido";
-  } else if (data.phone.trim().length < 7 || data.phone.trim().length > 20) {
-    errors.phone = "El teléfono debe tener entre 7 y 20 caracteres";
+  } else if (!/^\+506\s?\d{8}$/.test(data.phone.trim())) {
+    errors.phone = "El teléfono debe comenzar con +506 seguido de 8 dígitos";
+  }
+
+  // Validar cédula
+  if (!data.cedula?.trim()) {
+    errors.cedula = "La cédula es requerida";
+  } else if (!/^\d{9,}$/.test(data.cedula.trim())) {
+    errors.cedula = "La cédula debe contener al menos 9 dígitos numéricos";
   }
 
   // Validar dirección
@@ -140,11 +145,6 @@ export const validateClient = (data: {
     errors.city = "La ciudad debe tener entre 2 y 100 caracteres";
   } else if (!/^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/.test(data.city.trim())) {
     errors.city = "La ciudad solo puede contener letras y espacios";
-  }
-
-  // Validar cédula si se proporciona
-  if (data.cedula && (!/^\d+$/.test(data.cedula) || data.cedula.length < 6)) {
-    errors.cedula = "La cédula debe ser un número válido de al menos 6 dígitos";
   }
 
   // Validar estado

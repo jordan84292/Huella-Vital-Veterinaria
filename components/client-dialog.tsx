@@ -198,7 +198,7 @@ export function ClientDialog({
                   onChange={(e) =>
                     setFormData({ ...formData, id: e.target.value })
                   }
-                  placeholder="Cedula"
+                  placeholder="Cédula"
                   readOnly
                   required
                 />
@@ -212,7 +212,7 @@ export function ClientDialog({
                   onChange={(e) =>
                     setFormData({ ...formData, id: e.target.value })
                   }
-                  placeholder="Cedula"
+                  placeholder="Cédula"
                   className={validationErrors.cedula ? "border-red-500" : ""}
                   required
                 />
@@ -268,8 +268,9 @@ export function ClientDialog({
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
-                  placeholder="+34 612 345 678"
+                  placeholder="+506 0000-0000"
                   className={validationErrors.phone ? "border-red-500" : ""}
+                  minLength={12}
                   required
                 />
                 {validationErrors.phone && (
@@ -306,7 +307,7 @@ export function ClientDialog({
                   onChange={(e) =>
                     setFormData({ ...formData, city: e.target.value })
                   }
-                  placeholder="Madrid"
+                  placeholder="Alajuela"
                   className={validationErrors.city ? "border-red-500" : ""}
                   required
                 />
