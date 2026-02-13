@@ -60,7 +60,7 @@ export function AppointmentDialog({
   // Obtener la fecha de hoy en formato YYYY-MM-DD
   // Estado para mostrar errores del backend
   const [backendError, setBackendError] = useState<string>("");
-  const todayStr = new Date().toLocaleDateString("es-ES").split("T")[0];
+  const todayStr = new Date().toLocaleDateString("en-CA"); // Formato YYYY-MM-DD
   const patients = useSelector((state: RootState) => state.interface.patients);
   const clients = useSelector((state: RootState) => state.interface.clients);
   const users = useSelector((state: RootState) => state.interface.users);
@@ -397,10 +397,14 @@ export function AppointmentDialog({
     }
   };
 
-  // Función para cargar las horas disponibles según el veterinario
-  const fetchAvailableTimes = async (veterinarianId: string) => {
+  // Función para cargar las horas disponibles según el veterinario y la fecha
+  const fetchAvailableTimes = async (veterinarianId: string, date: string) => {
     try {
-      // Buscar el veterinario por ID para obtener su nombre
+      if (!veterinarianId || !date) {
+        setAvailableTimes([]);
+        return;
+      }
+
       const selectedVet = users.find(
         (v: any) => String(v.id) === String(veterinarianId),
       );
@@ -411,19 +415,44 @@ export function AppointmentDialog({
         return;
       }
 
-      const veterinarianName = selectedVet.nombre;
-      const dateToUse = formData.date || todayStr; // Usar la fecha del formulario o la fecha de hoy
-
       const response = await axiosApi.get(
-        `/booking/slots/available?veterinarian=${encodeURIComponent(veterinarianName)}&date=${dateToUse}`,
+        `/booking/slots/available?veterinarian=${encodeURIComponent(
+          selectedVet.nombre,
+        )}&date=${date}`,
       );
 
-      // Extraer los horarios disponibles de la respuesta
       if (response.data.data && response.data.data.availableSlots) {
-        const slots = response.data.data.availableSlots.map(
-          (slot: any) => slot.slot_time,
+        // LOG de slots recibidos para depuración
+        console.log(
+          "Slots recibidos de la API:",
+          response.data.data.availableSlots,
         );
-        setAvailableTimes(slots);
+
+        // --- FILTRO DE HORAS SI EL DÍA ES HOY (CORRECTO CON ZONA HORARIA LOCAL) ---
+        const today = new Date();
+        // selectedDate debe ser interpretada como local (input type="date" da YYYY-MM-DD)
+        const [year, month, day] = date.split("-").map(Number);
+        const selectedDate = new Date(today.getFullYear(), month - 1, day);
+        if (today.toDateString() === selectedDate.toDateString()) {
+          const currentHour = today.getHours();
+          const currentMinutes = today.getMinutes();
+          const currentTimeInMinutes = currentHour * 60 + currentMinutes;
+          const filteredSlots = response.data.data.availableSlots.filter(
+            (slot: any) => {
+              const [hours, minutes] = slot.slot_time.split(":").map(Number);
+              const slotTimeInMinutes = hours * 60 + minutes;
+              return slotTimeInMinutes > currentTimeInMinutes + 60;
+            },
+          );
+          setAvailableTimes(filteredSlots.map((slot: any) => slot.slot_time));
+        } else {
+          setAvailableTimes(
+            response.data.data.availableSlots.map(
+              (slot: any) => slot.slot_time,
+            ),
+          );
+        }
+        // --- FIN FILTRO ---
       } else {
         setAvailableTimes([]);
       }
@@ -444,8 +473,8 @@ export function AppointmentDialog({
 
     if (selectedVeterinarian) {
       setSelectedVeterinarianName(selectedVeterinarian.nombre || "");
-      // Esperar un momento para que el estado se actualice antes de cargar horarios
-      setTimeout(() => fetchAvailableTimes(veterinarianId), 100);
+      // Cargar horarios inmediatamente después de seleccionar el veterinario
+      fetchAvailableTimes(veterinarianId, formData.date);
     } else {
       setSelectedVeterinarianName("");
       setAvailableTimes([]); // Limpiar horarios si no se encuentra el veterinario
@@ -457,7 +486,10 @@ export function AppointmentDialog({
     setFormData((prev) => ({ ...prev, date: newDate }));
     // Si hay un veterinario seleccionado, recargar horarios
     if (formData.veterinarian) {
-      setTimeout(() => fetchAvailableTimes(formData.veterinarian), 100);
+      setTimeout(
+        () => fetchAvailableTimes(formData.veterinarian, newDate),
+        100,
+      );
     }
   };
 

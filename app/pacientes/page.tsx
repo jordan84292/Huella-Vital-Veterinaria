@@ -95,59 +95,37 @@ export default function PacientesPage() {
 
   // Enriquecer pacientes con última visita, próxima cita y nombre de propietario (usando campos reales)
   const patientsWithVisits = patients.map((patient) => {
-    // Buscar visitas del paciente (usando patientid)
-    const patientVisits = visits.filter(
-      (v: any) => String(v.patientid) === String(patient.id),
-    );
+    // Buscar la última cita completada del paciente
+    const lastCompletedAppointment = appointments
+      .filter(
+        (a: any) =>
+          String(a.patientid) === String(patient.id) &&
+          a.status === "Completada",
+      )
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime(),
+      )[0];
 
-    // Buscar citas completadas del paciente (usando patientid)
-    const patientCompletedAppointments = appointments.filter(
-      (a: any) =>
-        String(a.patientid) === String(patient.id) && a.status === "Completada",
-    );
+    const lastVisit = lastCompletedAppointment
+      ? lastCompletedAppointment.date
+      : undefined;
 
-    // Combinar visitas y citas completadas para obtener la más reciente
-    const allVisits = [
-      ...patientVisits.map((v: any) => ({ date: v.date, source: "visit" })),
-      ...patientCompletedAppointments.map((a: any) => ({
-        date: a.date,
-        source: "appointment",
-      })),
-    ];
+    // Buscar la próxima cita programada del paciente
+    const nextScheduledAppointment = appointments
+      .filter(
+        (a: any) =>
+          String(a.patientid) === String(patient.id) &&
+          a.status === "Programada",
+      )
+      .sort(
+        (a: any, b: any) =>
+          new Date(a.date).getTime() - new Date(b.date).getTime(),
+      )[0];
 
-    const lastVisit =
-      allVisits.length > 0
-        ? allVisits.reduce((latest: any, curr: any) =>
-            new Date(
-              curr.date.includes("T") ? curr.date : curr.date + "T00:00:00",
-            ) >
-            new Date(
-              latest.date.includes("T")
-                ? latest.date
-                : latest.date + "T00:00:00",
-            )
-              ? curr
-              : latest,
-          ).date
-        : undefined;
-
-    // Buscar citas futuras del paciente y obtener la más próxima (usando patientid, solo programadas)
-    const now = new Date();
-    const patientAppointments = appointments.filter(
-      (a: any) =>
-        String(a.patientid) === String(patient.id) &&
-        new Date(a.date + "T00:00:00") > now &&
-        a.status === "Programada",
-    );
-    const nextAppointment =
-      patientAppointments.length > 0
-        ? patientAppointments.reduce((soonest: any, curr: any) =>
-            new Date(curr.date + "T00:00:00") <
-            new Date(soonest.date + "T00:00:00")
-              ? curr
-              : soonest,
-          ).date
-        : undefined;
+    const nextVisit = nextScheduledAppointment
+      ? nextScheduledAppointment.date
+      : undefined;
 
     // Buscar nombre del propietario por cedula
     let ownerName = patient.ownerName;
@@ -163,7 +141,7 @@ export default function PacientesPage() {
     return {
       ...patient,
       lastVisit,
-      nextVisit: nextAppointment,
+      nextVisit,
       ownerName,
     };
   });
