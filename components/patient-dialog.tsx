@@ -236,6 +236,7 @@ export function PatientDialog({
     }
     // Fecha de nacimiento: no puede ser futura
     const today = new Date().toLocaleDateString("es-ES"); // Formato YYYY-MM-DD
+
     if (formData.birthDate && formData.birthDate > today) {
       dispatch(
         setMessage({
@@ -507,11 +508,12 @@ export function PatientDialog({
                       const birthDateValue =
                         formData.birthDate || (patient && patient.birthdate);
                       if (!birthDateValue) return "";
-                      const today = new Date();
+                      let todayBirth = new Date();
                       const birth = new Date(birthDateValue);
-                      let years = today.getFullYear() - birth.getFullYear();
-                      let months = today.getMonth() - birth.getMonth();
-                      if (today.getDate() < birth.getDate()) {
+                      let years =
+                        todayBirth.getFullYear() - birth.getFullYear();
+                      let months = todayBirth.getMonth() - birth.getMonth();
+                      if (todayBirth.getDate() < birth.getDate()) {
                         months--;
                       }
                       if (months < 0) {

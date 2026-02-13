@@ -60,7 +60,7 @@ export function AppointmentDialog({
   // Obtener la fecha de hoy en formato YYYY-MM-DD
   // Estado para mostrar errores del backend
   const [backendError, setBackendError] = useState<string>("");
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = new Date().toLocaleDateString("es-ES").split("T")[0];
   const patients = useSelector((state: RootState) => state.interface.patients);
   const clients = useSelector((state: RootState) => state.interface.clients);
   const users = useSelector((state: RootState) => state.interface.users);
