@@ -80,8 +80,6 @@ export function AttendAppointmentDialog({
 
       await axiosApi.post(`/appointments/${appointment.id}/attend`, visitData);
 
-   
-
       // Si es vacunación y se especificó fecha/hora para próxima dosis, crear nueva cita
       if (
         appointment.type === "Vacunación" &&
@@ -93,8 +91,6 @@ export function AttendAppointmentDialog({
           const patientId =
             (appointment as any).patientId || (appointment as any).patientid;
 
-      
-
           const nextAppointment = {
             patientId: patientId,
             date: formData.nextDoseDate,
@@ -105,21 +101,19 @@ export function AttendAppointmentDialog({
             notes: `Próxima dosis - ${formData.diagnosis}`,
           };
 
-          
-
           const response = await axiosApi.post(
             "/appointments",
             nextAppointment,
           );
-
-
 
           dispatch(
             setMessage({
               view: true,
               type: "Success",
               text: "Cita atendida y próxima dosis programada",
-              desc: `La cita ha sido completada y se programó la próxima dosis para el ${new Date(formData.nextDoseDate + "T00:00:00").toLocaleDateString("es-ES")} a las ${formData.nextDoseTime}.`,
+              desc: `La cita ha sido completada y se programó la próxima dosis para el ${new Date(
+                formData.nextDoseDate + "T00:00:00",
+              ).toLocaleDateString("es-ES")} a las ${formData.nextDoseTime}.`,
             }),
           );
         } catch (nextAppointmentError: any) {
@@ -314,7 +308,7 @@ export function AttendAppointmentDialog({
                           id="nextDoseDate"
                           type="date"
                           value={formData.nextDoseDate}
-                          min={new Date().toISOString().split("T")[0]}
+                          min={new Date().toLocaleDateString("en-CA")} // Formato YYYY-MM-DD
                           onChange={(e) =>
                             setFormData({
                               ...formData,
