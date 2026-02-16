@@ -309,7 +309,7 @@ export function PatientDialog({
     dispatch(setIsLoading(true));
 
     try {
-      // Calcular la edad en años y meses
+      // Calcular la edad en años (con decimales si es menor a 2 años)
       let calculatedAge = 0;
       let ageLabel = "años";
       if (formData.birthDate) {
@@ -324,12 +324,10 @@ export function PatientDialog({
           years--;
           months += 12;
         }
+        // Edad en años con decimales
+        calculatedAge = +(years + months / 12).toFixed(2);
         if (years < 2) {
-          calculatedAge = years * 12 + months;
           ageLabel = "meses";
-        } else {
-          calculatedAge = years;
-          ageLabel = "años";
         }
       }
       const dataToSend = {
