@@ -235,18 +235,23 @@ export function PatientDialog({
       return;
     }
     // Fecha de nacimiento: no puede ser futura
-    const today = new Date().toLocaleDateString("es-ES"); // Formato YYYY-MM-DD
-
-    if (formData.birthDate && formData.birthDate > today) {
-      dispatch(
-        setMessage({
-          view: true,
-          type: "Error",
-          text: "Fecha inválida",
-          desc: "La fecha de nacimiento no puede ser futura.",
-        }),
-      );
-      return;
+    if (formData.birthDate) {
+      const today = new Date();
+      const birthDate = new Date(formData.birthDate);
+      // Comparar solo la parte de la fecha (ignorar hora)
+      today.setHours(0, 0, 0, 0);
+      birthDate.setHours(0, 0, 0, 0);
+      if (birthDate > today) {
+        dispatch(
+          setMessage({
+            view: true,
+            type: "Error",
+            text: "Fecha inválida",
+            desc: "La fecha de nacimiento no puede ser futura.",
+          }),
+        );
+        return;
+      }
     }
     // Cédula del propietario: 6-12 dígitos
     if (!formData.ownerId || !/^\d{6,12}$/.test(formData.ownerId)) {
