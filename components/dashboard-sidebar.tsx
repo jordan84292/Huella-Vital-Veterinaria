@@ -20,7 +20,7 @@ const navigation = [
     name: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
-    roles: ["1", "2"], // Admin, Veterinario
+    roles: ["1", "2", "3", "4"], // Admin, Veterinario, Recepcionista, Asistente
   },
   {
     name: "Usuarios",
@@ -32,19 +32,19 @@ const navigation = [
     name: "Clientes",
     href: "/clientes",
     icon: UserPlus,
-    roles: ["1", "2"], // Admin, Veterinario
+    roles: ["1", "2", "3", "4"], // Admin, Veterinario, Recepcionista, Asistente
   },
   {
     name: "Pacientes",
     href: "/pacientes",
     icon: PawPrint,
-    roles: ["1", "2"], // Admin, Veterinario
+    roles: ["1", "2", "3", "4"], // Admin, Veterinario, Recepcionista, Asistente
   },
   {
     name: "Citas",
     href: "/citas",
     icon: Calendar,
-    roles: ["1", "2"], // Admin, Veterinario
+    roles: ["1", "2", "3", "4"], // Admin, Veterinario, Recepcionista, Asistente
   },
   {
     name: "Atender Pacientes",
