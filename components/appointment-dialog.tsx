@@ -679,7 +679,6 @@ export function AppointmentDialog({
                     Completada (solo desde atención)
                   </SelectItem>
                 )}
-                <SelectItem value="Cancelada">Cancelada</SelectItem>
               </SelectContent>
             </Select>
           </div>
